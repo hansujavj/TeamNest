@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { UsersIcon } from "@heroicons/react/24/solid";
-import type { User, Profile, Team } from "@/types";
+import type { Team } from "@/types";
 
 export default function TeamsPage() {
   const router = useRouter();
@@ -18,12 +18,6 @@ export default function TeamsPage() {
         router.push("/login");
         return;
       }
-      // Fetch user profile for name
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("id, name, email")
-        .eq("id", user.id)
-        .single();
       // Teams you lead
       const { data: leadTeams } = await supabase
         .from("teams")

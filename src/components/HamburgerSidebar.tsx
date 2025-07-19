@@ -34,7 +34,7 @@ export default function HamburgerSidebar({ unreadNotifications = 0, activePath =
     } else {
       document.documentElement.classList.remove("dark");
     }
-  }, [dark]);
+  }, []);
 
   // Close sidebar on outside click (mobile)
   useEffect(() => {

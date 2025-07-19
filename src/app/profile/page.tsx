@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import type { User, Profile, Team, Task, TaskAssignment } from "@/types";
+import type { Team, TaskAssignment } from "@/types";
 
 function getStatusBadge(status: string) {
   const base = "px-2 py-0.5 rounded-full text-xs font-semibold inline-block";
