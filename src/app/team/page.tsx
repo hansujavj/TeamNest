@@ -3,44 +3,47 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { UsersIcon } from "@heroicons/react/24/solid";
+import type { User, Profile, Team } from "@/types";
 
 export default function TeamsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
-  const [profile, setProfile] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
-  const [leadTeams, setLeadTeams] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
-  const [memberTeams, setMemberTeams] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [leadTeams, setLeadTeams] = useState<Team[]>([]);
+  const [memberTeams, setMemberTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getUserAndTeams = async (): Promise<void> => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    const getUserAndTeams = async (): Promise<void> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push("/login");
         return;
       }
-      setUser(user);
+      setUser(user as User);
       // Fetch user profile for name
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("name")
+        .select("id, name, email")
         .eq("id", user.id)
         .single();
-      setProfile(profileData);
+      setProfile(profileData as Profile);
       // Teams you lead
       const { data: leadTeams } = await supabase
         .from("teams")
-        .select("*")
+        .select("id, name, created_by")
         .eq("created_by", user.id);
-      setLeadTeams(leadTeams || []);
+      setLeadTeams((leadTeams || []) as Team[]);
       // Teams joined as member (exclude teams where user is lead)
       const { data: memberTeams } = await supabase
         .from("team_members")
-        .select("team_id, teams(*)")
+        .select("team_id, teams(id, name, created_by)")
         .eq("user_id", user.id);
       // Only show teams where user is not the lead
-      const memberTeamsFiltered = (memberTeams || []).map((tm: any) => tm.teams).filter((team: any) => !leadTeams?.some((lt: any) => lt.id === team.id));
-      setMemberTeams(memberTeamsFiltered);
+      const memberTeamsFiltered = (memberTeams || [])
+        .map((tm: { teams: Team | Team[] }) => Array.isArray(tm.teams) ? tm.teams[0] : tm.teams)
+        .filter((team: Team | undefined) => team && !leadTeams?.some((lt: Team) => lt.id === team.id));
+      setMemberTeams(memberTeamsFiltered as Team[]);
       setLoading(false);
     };
     getUserAndTeams();

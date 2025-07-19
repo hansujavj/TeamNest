@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import type { User, Profile, Team, Task, TaskAssignment } from "@/types";
 
 function getStatusBadge(status: string) {
   const base = "px-2 py-0.5 rounded-full text-xs font-semibold inline-block";
@@ -12,14 +13,14 @@ function getStatusBadge(status: string) {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [assignedTasks, setAssignedTasks] = useState<any[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [assignedTasks, setAssignedTasks] = useState<TaskAssignment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [debugAssignments, setDebugAssignments] = useState<any[]>([]);
-  const [leadTeams, setLeadTeams] = useState<any[]>([]);
-  const [allLeadTasks, setAllLeadTasks] = useState<any[]>([]);
-  const [assignmentHistory, setAssignmentHistory] = useState<any[]>([]);
+  const [debugAssignments, setDebugAssignments] = useState<TaskAssignment[]>([]);
+  const [leadTeams, setLeadTeams] = useState<Team[]>([]);
+  const [allLeadTasks, setAllLeadTasks] = useState<(Task & { teamName: string })[]>([]);
+  const [assignmentHistory, setAssignmentHistory] = useState<TaskAssignment[]>([]);
   const [teamsMap, setTeamsMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -29,32 +30,32 @@ export default function ProfilePage() {
         router.push("/login");
         return;
       }
-      setUser(user);
+      setUser(user as User);
       // Fetch user profile
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("name, email")
+        .select("id, name, email")
         .eq("id", user.id)
         .single();
-      setProfile(profileData);
+      setProfile(profileData as Profile);
       // Fetch teams where user is lead
       const { data: leadTeams } = await supabase
         .from("teams")
-        .select("id, name")
+        .select("id, name, created_by")
         .eq("created_by", user.id);
-      setLeadTeams(leadTeams || []);
+      setLeadTeams((leadTeams || []) as Team[]);
       // If user is a lead, fetch all tasks for those teams
-      let allLeadTasks: any[] = [];
+      let allLeadTasks: (Task & { teamName: string })[] = [];
       if (leadTeams && leadTeams.length > 0) {
-        const teamIds = leadTeams.map((t: any) => t.id);
+        const teamIds = (leadTeams as Team[]).map((t) => t.id);
         const { data: tasks } = await supabase
           .from("tasks")
           .select("id, title, team_id, due_date, priority, created_by, status")
           .in("team_id", teamIds);
         // Attach team name
-        allLeadTasks = (tasks || []).map((task: any) => ({
+        allLeadTasks = (tasks || []).map((task: Task) => ({
           ...task,
-          teamName: leadTeams.find((t: any) => t.id === task.team_id)?.name || "Unknown Team",
+          teamName: (leadTeams as Team[]).find((t) => t.id === task.team_id)?.name || "Unknown Team",
         }));
       }
       setAllLeadTasks(allLeadTasks);
@@ -63,42 +64,40 @@ export default function ProfilePage() {
         .from("task_assignments")
         .select("*, tasks(id, title, team_id, due_date, priority), teams(name)")
         .eq("user_id", user.id);
-      setDebugAssignments(assignments || []);
+      setDebugAssignments((assignments || []) as TaskAssignment[]);
       // Join with team info
-      let tasksWithTeam: any[] = [];
+      let tasksWithTeam: TaskAssignment[] = [];
       if (assignments && assignments.length > 0) {
-        const teamIds = Array.from(new Set(assignments.map((a: any) => a.tasks?.team_id).filter(Boolean)));
-        let teamsMap: Record<string, any> = {};
+        const teamIds = Array.from(new Set((assignments as TaskAssignment[]).map((a) => a.tasks?.team_id).filter(Boolean)));
+        let teamsMap: Record<string, Team> = {};
         if (teamIds.length > 0) {
           const { data: teams } = await supabase
             .from("teams")
-            .select("id, name")
+            .select("id, name, created_by")
             .in("id", teamIds);
           if (teams) {
-            teamsMap = Object.fromEntries(teams.map((t: any) => [t.id, t]));
+            teamsMap = Object.fromEntries((teams as Team[]).map((t) => [t.id, t]));
           }
         }
-        tasksWithTeam = assignments.map((a: any) => ({
-          id: a.tasks?.id,
-          title: a.tasks?.title,
+        tasksWithTeam = (assignments as TaskAssignment[]).map((a) => ({
+          ...a,
           teamId: a.tasks?.team_id,
-          teamName: teamsMap[a.tasks?.team_id]?.name || "Unknown Team",
-          status: a.status,
+          teamName: a.tasks?.team_id ? (teamsMap[a.tasks?.team_id]?.name || "Unknown Team") : "Unknown Team",
+          title: a.tasks?.title,
           dueDate: a.tasks?.due_date,
           priority: a.tasks?.priority,
         }));
       }
       setAssignedTasks(tasksWithTeam);
       // Fetch all assignments ever for this user (history)
-      const { data: allAssignments, error } = await supabase
+      const { data: allAssignments } = await supabase
         .from("task_assignments")
         .select("*, tasks(*)")
         .eq("user_id", user.id)
         .order("assigned_at", { ascending: false });
-      console.log("Assignments with join:", allAssignments, "error:", error);
-      setAssignmentHistory(allAssignments || []);
+      setAssignmentHistory((allAssignments || []) as TaskAssignment[]);
       // Fetch team names for all unique team_ids in assignments
-      const teamIds = [...new Set((allAssignments || []).map(a => a.tasks?.team_id).filter(Boolean))];
+      const teamIds = [...new Set((allAssignments || []).map((a: TaskAssignment) => a.tasks?.team_id).filter(Boolean))];
       let teamsMap: Record<string, string> = {};
       if (teamIds.length > 0) {
         const { data: teams } = await supabase
@@ -106,7 +105,7 @@ export default function ProfilePage() {
           .select("id, name")
           .in("id", teamIds);
         if (teams) {
-          teamsMap = Object.fromEntries(teams.map((t: any) => [t.id, t.name]));
+          teamsMap = Object.fromEntries((teams as Team[]).map((t) => [t.id, t.name]));
         }
       }
       setTeamsMap(teamsMap);

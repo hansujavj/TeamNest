@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { getDomainColor } from "@/utils/domainColors";
 import toast from "react-hot-toast";
 import { UsersIcon, ClipboardDocumentListIcon, SparklesIcon, UserCircleIcon, LinkIcon, PlusIcon } from "@heroicons/react/24/solid";
+import type { User, Profile, Team, Task, TaskAssignment } from "@/types";
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
@@ -15,16 +16,16 @@ const STATUS_OPTIONS = [
 export default function TeamPage() {
   const { teamId } = useParams();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [team, setTeam] = useState<any>(null);
-  const [members, setMembers] = useState<any[]>([]);
-  const [domains, setDomains] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [assignments, setAssignments] = useState<any[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [team, setTeam] = useState<Team | null>(null);
+  const [members, setMembers] = useState<{ user_id: string; profiles: Profile }[]>([]);
+  const [domains, setDomains] = useState<{ id: string; name: string }[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
   const [isLead, setIsLead] = useState(false);
   const [loading, setLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
-  const [activities, setActivities] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]); // keep as any[] for now
   const [activityInput, setActivityInput] = useState("");
   const [activityLoading, setActivityLoading] = useState(false);
   const [preferredDomainIds, setPreferredDomainIds] = useState<string[]>([]);
@@ -36,30 +37,30 @@ export default function TeamPage() {
         router.push("/login");
         return;
       }
-      setUser(user);
-      const { data: team } = await supabase.from("teams").select("*").eq("id", teamId).single();
-      setTeam(team);
-      setIsLead(team?.created_by === user.id);
+      setUser(user as User);
+      const { data: team } = await supabase.from("teams").select("id, name, created_by").eq("id", teamId).single();
+      setTeam(team as Team);
+      setIsLead((team as Team)?.created_by === user.id);
       const { data: members } = await supabase
         .from("team_members")
-        .select("user_id, profiles(name, email, role)")
+        .select("user_id, profiles(id, name, email, role)")
         .eq("team_id", teamId);
-      setMembers(members || []);
+      setMembers((members || []) as { user_id: string; profiles: Profile }[]);
       const { data: domains } = await supabase
         .from("domains")
-        .select("*")
+        .select("id, name")
         .eq("team_id", teamId);
-      setDomains(domains || []);
+      setDomains((domains || []) as { id: string; name: string }[]);
       const { data: tasks } = await supabase
         .from("tasks")
-        .select("*, domain:domains(name)")
+        .select("id, title, team_id, due_date, priority, created_by, status, domain:domains(name)")
         .eq("team_id", teamId);
-      setTasks(tasks || []);
+      setTasks((tasks || []) as Task[]);
       const { data: assignments } = await supabase
         .from("task_assignments")
         .select("*, profiles(name, email)")
-        .in("task_id", (tasks || []).map((t: any) => t.id));
-      setAssignments(assignments || []);
+        .in("task_id", (tasks || []).map((t: Task) => t.id));
+      setAssignments((assignments || []) as TaskAssignment[]);
       setLoading(false);
       // Fetch team activities
       const { data: teamActivities } = await supabase
@@ -74,7 +75,7 @@ export default function TeamPage() {
           .from("member_domains")
           .select("domain_id")
           .eq("user_id", user.id);
-        setPreferredDomainIds((memberDomains || []).map((md: any) => md.domain_id));
+        setPreferredDomainIds((memberDomains || []).map((md: { domain_id: string }) => md.domain_id));
       }
     };
     fetchData();
@@ -86,10 +87,10 @@ export default function TeamPage() {
       .from("task_assignments")
       .update({ status: newStatus })
       .eq("task_id", taskId)
-      .eq("user_id", user.id);
+      .eq("user_id", user?.id);
     setAssignments((prev) =>
       prev.map((a) =>
-        a.task_id === taskId && a.user_id === user.id
+        a.task_id === taskId && a.user_id === user?.id
           ? { ...a, status: newStatus }
           : a
       )
@@ -101,11 +102,11 @@ export default function TeamPage() {
       // Get task title
       const task = tasks.find((t) => t.id === taskId);
       // Fetch user name
-      let userName = user.email;
+      let userName = user?.email;
       const { data: profileData } = await supabase
         .from("profiles")
         .select("name")
-        .eq("id", user.id)
+        .eq("id", user?.id)
         .single();
       if (profileData && profileData.name) userName = profileData.name;
       await supabase.from("notifications").insert([
@@ -198,7 +199,7 @@ export default function TeamPage() {
                   <div>
                     <div className="font-semibold text-[#123458] text-base">{m.profiles?.name}</div>
                     <div className="text-xs text-[#123458]/70 font-bold">
-                      {m.user_id === team.created_by ? "Lead" : "Member"}
+                      {m.user_id === team?.created_by ? "Lead" : "Member"}
                     </div>
                   </div>
                   <span className="ml-auto text-xs text-[#123458]/70">{m.profiles?.email}</span>
@@ -235,7 +236,7 @@ export default function TeamPage() {
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs mt-2">
                         <span className="flex items-center gap-1 text-[#123458]">Assigned to: <span className="font-semibold flex items-center gap-1"><UserCircleIcon className="w-4 h-4"/>{assignment.profiles?.name || assignment.user_id}</span></span>
                         <span className="flex items-center gap-1 text-[#123458]">Status:
-                          {assignment.user_id === user.id ? (
+                          {assignment.user_id === user?.id ? (
                             <select value={assignment.status} onChange={(e) => handleStatusChange(task.id, e.target.value)} className="border rounded px-2 py-1 text-xs bg-white text-[#123458] font-semibold ml-1" disabled={statusUpdating === task.id}>
                               {STATUS_OPTIONS.map((opt) => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>

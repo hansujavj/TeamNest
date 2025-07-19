@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { SparklesIcon } from "@heroicons/react/24/solid";
 import { UsersIcon, ClipboardDocumentListIcon, MoonIcon, SunIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
+import type { User, Profile, Team, Task, TaskAssignment } from "@/types";
 
 function getStatusBadge(status: string) {
   const base = "px-2 py-0.5 rounded-full text-xs font-semibold inline-block";
@@ -15,15 +16,15 @@ function getStatusBadge(status: string) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
-  const [profile, setProfile] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
-  const [assignedTasks, setAssignedTasks] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [assignedTasks, setAssignedTasks] = useState<TaskAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dark, setDark] = useState(false);
   const joinInputRef = useRef<HTMLInputElement>(null);
-  const [leadTeams, setLeadTeams] = useState<any[]>([]);
-  const [memberTeams, setMemberTeams] = useState<any[]>([]);
+  const [leadTeams, setLeadTeams] = useState<Team[]>([]);
+  const [memberTeams, setMemberTeams] = useState<Team[]>([]);
   const [preferredDomains, setPreferredDomains] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
@@ -35,46 +36,45 @@ export default function DashboardPage() {
   }, [dark]);
 
   useEffect(() => {
-    const getUserAndTasks = async (): Promise<void> => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    const getUserAndTasks = async (): Promise<void> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push("/login");
         return;
       }
-      setUser(user);
+      setUser(user as User);
       // Fetch user profile for name
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("name, email")
+        .select("id, name, email")
         .eq("id", user.id)
         .single();
-      setProfile(profileData);
+      setProfile(profileData as Profile);
       // Fetch all assigned tasks for this user (across all teams)
       const { data: assignments } = await supabase
         .from("task_assignments")
         .select("*, tasks(id, title, team_id, due_date, priority), teams(name)")
-        .eq("user_id", user.id); // eslint-disable-line @typescript-eslint/no-explicit-any
+        .eq("user_id", user.id);
       // Join with team info
-      let tasksWithTeam: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+      let tasksWithTeam: TaskAssignment[] = [];
       if (assignments && assignments.length > 0) {
         // Fetch all teams for the assigned tasks
-        const teamIds = Array.from(new Set(assignments.map((a: any) => a.tasks?.team_id).filter(Boolean))); // eslint-disable-line @typescript-eslint/no-explicit-any
-        let teamsMap: Record<string, any> = {}; // eslint-disable-line @typescript-eslint/no-explicit-any
+        const teamIds = Array.from(new Set((assignments as TaskAssignment[]).map((a) => a.tasks?.team_id).filter(Boolean)));
+        let teamsMap: Record<string, Team> = {};
         if (teamIds.length > 0) {
           const { data: teams } = await supabase
             .from("teams")
-            .select("id, name")
-            .in("id", teamIds); // eslint-disable-line @typescript-eslint/no-explicit-any
+            .select("id, name, created_by")
+            .in("id", teamIds);
           if (teams) {
-            teamsMap = Object.fromEntries(teams.map((t: any) => [t.id, t])); // eslint-disable-line @typescript-eslint/no-explicit-any
+            teamsMap = Object.fromEntries((teams as Team[]).map((t) => [t.id, t]));
           }
         }
-        tasksWithTeam = assignments.map((a: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-          id: a.tasks?.id,
-          title: a.tasks?.title,
+        tasksWithTeam = (assignments as TaskAssignment[]).map((a) => ({
+          ...a,
           teamId: a.tasks?.team_id,
-          teamName: teamsMap[a.tasks?.team_id]?.name || "Unknown Team",
-          status: a.status,
+          teamName: a.tasks?.team_id ? (teamsMap[a.tasks?.team_id]?.name || "Unknown Team") : "Unknown Team",
+          title: a.tasks?.title,
           dueDate: a.tasks?.due_date,
           priority: a.tasks?.priority,
         }));
@@ -91,27 +91,31 @@ export default function DashboardPage() {
       // Teams you lead
       const { data: leadTeams } = await supabase
         .from("teams")
-        .select("*")
-        .eq("created_by", user.id);
-      setLeadTeams(leadTeams || []);
+        .select("id, name, created_by")
+        .eq("created_by", user?.id ?? "");
+      setLeadTeams((leadTeams || []) as Team[]);
       // Teams you belong to
       const { data: memberTeams } = await supabase
         .from("team_members")
-        .select("team_id, teams(*)")
-        .eq("user_id", user.id);
+        .select("team_id, teams(id, name, created_by)")
+        .eq("user_id", user?.id ?? "");
       // Only show teams where user is not the lead
-      const memberTeamsFiltered = (memberTeams || []).map((tm: any) => tm.teams).filter((team: any) => !leadTeams?.some((lt: any) => lt.id === team.id));
-      setMemberTeams(memberTeamsFiltered);
+      const memberTeamsFiltered = (memberTeams || [])
+        .map((tm: { teams: Team | Team[] }) => Array.isArray(tm.teams) ? tm.teams[0] : tm.teams)
+        .filter((team: Team | undefined) => team && !leadTeams?.some((lt: Team) => lt.id === team.id));
+      setMemberTeams(memberTeamsFiltered as Team[]);
       // Fetch preferred domains for all teams
       const { data: memberDomains } = await supabase
         .from("member_domains")
         .select("domain_id, domain:domains(name, team_id)")
-        .eq("user_id", user.id);
+        .eq("user_id", user?.id ?? "");
       const pref: Record<string, string[]> = {};
-      (memberDomains || []).forEach((md: any) => {
-        if (md.domain && md.domain.team_id) {
-          if (!pref[md.domain.team_id]) pref[md.domain.team_id] = [];
-          pref[md.domain.team_id].push(md.domain.name);
+      (memberDomains || []).forEach((md: { domain?: { team_id?: string; name?: string } | { team_id?: string; name?: string }[] }) => {
+        let domain = md.domain;
+        if (Array.isArray(domain)) domain = domain[0];
+        if (domain && domain.team_id) {
+          if (!pref[domain.team_id]) pref[domain.team_id] = [];
+          pref[domain.team_id].push(domain.name!);
         }
       });
       setPreferredDomains(pref);
