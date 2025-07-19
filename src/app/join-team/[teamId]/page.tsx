@@ -2,12 +2,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import type { User, Team } from "@/types";
 
 export default function JoinTeamPage() {
   const { teamId } = useParams();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [team, setTeam] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [team, setTeam] = useState<Team | null>(null);
   const [isMember, setIsMember] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -20,10 +21,10 @@ export default function JoinTeamPage() {
         router.push("/login");
         return;
       }
-      setUser(user);
+      setUser(user as User);
       // Get team
-      const { data: team } = await supabase.from("teams").select("*").eq("id", teamId).single();
-      setTeam(team);
+      const { data: team } = await supabase.from("teams").select("id, name, created_by").eq("id", teamId).single();
+      setTeam(team as Team);
       // Check if already a member
       const { data: member } = await supabase
         .from("team_members")
@@ -41,7 +42,7 @@ export default function JoinTeamPage() {
     setLoading(true);
     setError("");
     const { error } = await supabase.from("team_members").insert([
-      { team_id: teamId, user_id: user.id }
+      { team_id: teamId, user_id: user?.id }
     ]);
     if (error) {
       setError(error.message);

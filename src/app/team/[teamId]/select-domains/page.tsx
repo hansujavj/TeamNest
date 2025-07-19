@@ -2,11 +2,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import type { User, Team, Profile } from "@/types";
 
 export default function SelectDomainsPage() {
   const { teamId } = useParams();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [domains, setDomains] = useState<any[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +53,7 @@ export default function SelectDomainsPage() {
     const { error: delError } = await supabase
       .from("member_domains")
       .delete()
-      .eq("user_id", user.id)
+      .eq("user_id", user?.id)
       .in("domain_id", domains.map((d) => d.id));
     if (delError) {
       setError(delError.message);
@@ -61,7 +62,7 @@ export default function SelectDomainsPage() {
     }
     // Insert new prefs
     if (selected.length > 0) {
-      const inserts = selected.map((domain_id) => ({ user_id: user.id, domain_id }));
+      const inserts = selected.map((domain_id) => ({ user_id: user?.id, domain_id }));
       const { error: insError } = await supabase.from("member_domains").insert(inserts);
       if (insError) {
         setError(insError.message);

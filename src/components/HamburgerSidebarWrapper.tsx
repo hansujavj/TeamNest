@@ -3,6 +3,7 @@ import HamburgerSidebar from "@/components/HamburgerSidebar";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import type { User } from "@/types";
 
 export default function HamburgerSidebarWrapper() {
   const pathname = usePathname();
@@ -15,7 +16,7 @@ export default function HamburgerSidebarWrapper() {
         .from("notifications")
         .select("read_status")
         .eq("user_id", user.id);
-      setUnreadNotifications((data || []).filter((n: any) => !n.read_status).length);
+      setUnreadNotifications(((data || []) as { read_status: boolean }[]).filter((n) => !n.read_status).length);
     };
     fetchUnread();
   }, []);

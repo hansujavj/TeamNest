@@ -3,11 +3,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { BellIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import type { User } from "@/types";
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [notifications, setNotifications] = useState<{ id: string; read_status: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,14 +19,14 @@ export default function NotificationsPage() {
         router.push("/login");
         return;
       }
-      setUser(user);
+      setUser(user as User);
       // Get notifications
       const { data: notifications } = await supabase
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
         .order("timestamp", { ascending: false });
-      setNotifications(notifications || []);
+      setNotifications((notifications || []) as { id: string; read_status: boolean }[]);
       setLoading(false);
       // Mark all as read
       if (notifications && notifications.some((n) => !n.read_status)) {

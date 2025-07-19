@@ -2,14 +2,15 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import type { User, Team, Profile } from "@/types";
 
 export default function CreateTaskPage() {
   const { teamId } = useParams();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [team, setTeam] = useState<any>(null);
-  const [domains, setDomains] = useState<any[]>([]);
-  const [members, setMembers] = useState<any[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [team, setTeam] = useState<Team | null>(null);
+  const [domains, setDomains] = useState<{ id: string; name: string }[]>([]);
+  const [members, setMembers] = useState<(Profile & { preferredDomains: string[] })[]>([]);
   const [domainId, setDomainId] = useState("");
   const [assignee, setAssignee] = useState("");
   const [title, setTitle] = useState("");
@@ -26,47 +27,47 @@ export default function CreateTaskPage() {
         router.push("/login");
         return;
       }
-      setUser(user);
+      setUser(user as User);
       // Get team
-      const { data: team } = await supabase.from("teams").select("*").eq("id", teamId).single();
-      setTeam(team);
-      if (team?.created_by !== user.id) {
+      const { data: team } = await supabase.from("teams").select("id, name, created_by").eq("id", teamId).single();
+      setTeam(team as Team);
+      if ((team as Team)?.created_by !== user.id) {
         setError("Only the Team Lead can create tasks.");
         setLoading(false);
         return;
       }
       // Get domains
-      const { data: domains } = await supabase.from("domains").select("*").eq("team_id", teamId);
-      setDomains(domains || []);
+      const { data: domains } = await supabase.from("domains").select("id, name").eq("team_id", teamId);
+      setDomains((domains || []) as { id: string; name: string }[]);
       // Get team member user_ids
       const { data: teamMembers } = await supabase
         .from("team_members")
         .select("user_id")
         .eq("team_id", teamId);
-      const userIds = (teamMembers || []).map((tm: any) => tm.user_id);
+      const userIds = (teamMembers || []).map((tm: { user_id: string }) => tm.user_id);
       // Get profiles for those user_ids
-      let profiles = [];
+      let profiles: Profile[] = [];
       if (userIds.length > 0) {
         const { data } = await supabase
           .from("profiles")
           .select("id, name, email, role")
           .in("id", userIds);
-        profiles = data || [];
+        profiles = (data || []) as Profile[];
       }
       // Get member_domains for those users
-      let memberDomains = [];
+      let memberDomains: { user_id: string; domain_id: string }[] = [];
       if (userIds.length > 0) {
         const { data } = await supabase
           .from("member_domains")
           .select("user_id, domain_id");
-        memberDomains = data || [];
+        memberDomains = (data || []) as { user_id: string; domain_id: string }[];
       }
       // Merge profiles and domain preferences
-      const members = profiles.map((profile: any) => ({
+      const members = profiles.map((profile) => ({
         ...profile,
         preferredDomains: memberDomains
-          .filter((md: any) => md.user_id === profile.id)
-          .map((md: any) => md.domain_id),
+          .filter((md) => md.user_id === profile.id)
+          .map((md) => md.domain_id),
       }));
       setMembers(members);
       setLoading(false);
@@ -87,7 +88,7 @@ export default function CreateTaskPage() {
           description,
           domain_id: domainId,
           team_id: teamId,
-          created_by: user.id,
+          created_by: user?.id,
         },
       ])
       .select()

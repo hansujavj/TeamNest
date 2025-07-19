@@ -3,11 +3,12 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { LightBulbIcon } from "@heroicons/react/24/outline";
+import type { User } from "@/types";
 
 export default function NotificationBell() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [notifications, setNotifications] = useState<{ id: string; read_status: boolean }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -15,15 +16,15 @@ export default function NotificationBell() {
   useEffect(() => {
     const fetchUserAndNotifications = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      setUser(user as User);
       if (user) {
         const { data } = await supabase
           .from("notifications")
-          .select("*")
+          .select("id, read_status")
           .eq("user_id", user.id)
           .order("timestamp", { ascending: false });
-        setNotifications(data || []);
-        setUnreadCount((data || []).filter((n: any) => !n.read_status).length);
+        setNotifications((data || []) as { id: string; read_status: boolean }[]);
+        setUnreadCount(((data || []) as { read_status: boolean }[]).filter((n) => !n.read_status).length);
       }
     };
     fetchUserAndNotifications();
