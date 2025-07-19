@@ -1,0 +1,189 @@
+"use client";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
+
+export default function CreateTaskPage() {
+  const { teamId } = useParams();
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [team, setTeam] = useState<any>(null);
+  const [domains, setDomains] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
+  const [domainId, setDomainId] = useState("");
+  const [assignee, setAssignee] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Get user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      setUser(user);
+      // Get team
+      const { data: team } = await supabase.from("teams").select("*").eq("id", teamId).single();
+      setTeam(team);
+      if (team?.created_by !== user.id) {
+        setError("Only the Team Lead can create tasks.");
+        setLoading(false);
+        return;
+      }
+      // Get domains
+      const { data: domains } = await supabase.from("domains").select("*").eq("team_id", teamId);
+      setDomains(domains || []);
+      // Get team member user_ids
+      const { data: teamMembers } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("team_id", teamId);
+      const userIds = (teamMembers || []).map((tm: any) => tm.user_id);
+      // Get profiles for those user_ids
+      let profiles = [];
+      if (userIds.length > 0) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("id, name, email, role")
+          .in("id", userIds);
+        profiles = data || [];
+      }
+      // Get member_domains for those users
+      let memberDomains = [];
+      if (userIds.length > 0) {
+        const { data } = await supabase
+          .from("member_domains")
+          .select("user_id, domain_id");
+        memberDomains = data || [];
+      }
+      // Merge profiles and domain preferences
+      const members = profiles.map((profile: any) => ({
+        ...profile,
+        preferredDomains: memberDomains
+          .filter((md: any) => md.user_id === profile.id)
+          .map((md: any) => md.domain_id),
+      }));
+      setMembers(members);
+      setLoading(false);
+    };
+    fetchData();
+  }, [teamId, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    // Insert task
+    const { data: task, error: taskError } = await supabase
+      .from("tasks")
+      .insert([
+        {
+          title,
+          description,
+          domain_id: domainId,
+          team_id: teamId,
+          created_by: user.id,
+        },
+      ])
+      .select()
+      .single();
+    if (taskError) {
+      setError(taskError.message);
+      setSaving(false);
+      return;
+    }
+    // Assign task
+    const { error: assignError } = await supabase
+      .from("task_assignments")
+      .insert([
+        { task_id: task.id, user_id: assignee, status: "pending" },
+      ]);
+    if (assignError) {
+      setError(assignError.message);
+      setSaving(false);
+      return;
+    }
+    // Create notification
+    await supabase.from("notifications").insert([
+      {
+        user_id: assignee,
+        content: `You have been assigned a new task: ${title}`,
+        read_status: false,
+      },
+    ]);
+    setSaving(false);
+    router.push(`/team/${teamId}`);
+  };
+
+  if (loading) return <div className="p-8">Loading...</div>;
+  if (error) return <div className="p-8 text-red-500">{error}</div>;
+
+  // Filter members by selected domain preference
+  const preferredMembers = domainId
+    ? members.filter((m) => m.preferredDomains.includes(domainId))
+    : [];
+  const otherMembers = domainId
+    ? members.filter((m) => !m.preferredDomains.includes(domainId))
+    : members;
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F1F5F9] to-[#E0E7EF] px-4">
+      <div className="w-full max-w-md bg-white/90 border border-[#D4C9BE] rounded-2xl shadow-lg p-8 flex flex-col gap-6">
+        <h1 className="text-3xl font-extrabold text-[#123458] text-center mb-1 tracking-tight">Create Task</h1>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <input
+            type="text"
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full p-3 rounded-lg border border-[#D4C9BE] bg-white text-[#123458] focus:outline-none focus:ring-2 focus:ring-[#123458] text-lg font-semibold"
+            required
+          />
+          <textarea
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full p-3 rounded-lg border border-[#D4C9BE] bg-white text-[#123458] focus:outline-none focus:ring-2 focus:ring-[#123458] text-base"
+          />
+          <select
+            value={domainId}
+            onChange={(e) => setDomainId(e.target.value)}
+            className="w-full p-3 rounded-lg border border-[#D4C9BE] bg-white text-[#123458] focus:outline-none focus:ring-2 focus:ring-[#123458] text-base"
+            required
+          >
+            <option value="">Select Domain</option>
+            {domains.map((d) => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
+          <select
+            value={assignee}
+            onChange={(e) => setAssignee(e.target.value)}
+            className="w-full p-3 rounded-lg border border-[#D4C9BE] bg-white text-[#123458] focus:outline-none focus:ring-2 focus:ring-[#123458] text-base"
+            required
+          >
+            <option value="">Assign to Member</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name} ({m.email}){domainId && m.preferredDomains.includes(domainId) ? " ⭐" : ""}
+              </option>
+            ))}
+          </select>
+          {error && <div className="text-red-500 text-center text-sm mb-1">{error}</div>}
+          <button
+            type="submit"
+            className="w-full bg-[#123458] hover:bg-[#D4C9BE] hover:text-[#123458] text-white py-3 rounded-xl font-semibold shadow transition disabled:opacity-60 mt-1"
+            disabled={saving}
+          >
+            {saving ? "Creating..." : "Create Task"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+} 

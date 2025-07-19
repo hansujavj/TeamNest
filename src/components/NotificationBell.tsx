@@ -1,0 +1,103 @@
+"use client";
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
+import { LightBulbIcon } from "@heroicons/react/24/outline";
+
+export default function NotificationBell() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchUserAndNotifications = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (user) {
+        const { data } = await supabase
+          .from("notifications")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("timestamp", { ascending: false });
+        setNotifications(data || []);
+        setUnreadCount((data || []).filter((n: any) => !n.read_status).length);
+      }
+    };
+    fetchUserAndNotifications();
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const handleNotificationClick = async (id: string) => {
+    await supabase
+      .from("notifications")
+      .update({ read_status: true })
+      .eq("id", id);
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read_status: true } : n))
+    );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+    router.push("/notifications");
+    setDropdownOpen(false);
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 transition"
+        onClick={() => setDropdownOpen((v) => !v)}
+        aria-label="Notifications"
+      >
+        <LightBulbIcon
+          className="w-6 h-6 text-slate-700"
+        />
+        {unreadCount > 0 && (
+          <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold">
+            {unreadCount}
+          </span>
+        )}
+      </button>
+      {dropdownOpen && (
+        <div className="absolute right-0 mt-2 w-80 max-w-xs bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
+          <div className="px-4 py-2 text-slate-700 text-sm font-semibold border-b">Notifications</div>
+          {notifications.length === 0 ? (
+            <div className="px-4 py-4 text-slate-500 text-sm">No notifications.</div>
+          ) : (
+            <ul className="max-h-80 overflow-y-auto">
+              {notifications.slice(0, 8).map((n) => (
+                <li
+                  key={n.id}
+                  className={`px-4 py-3 text-sm cursor-pointer hover:bg-slate-100 transition flex flex-col ${n.read_status ? "text-slate-500" : "text-slate-900 font-semibold bg-blue-50"}`}
+                  onClick={() => handleNotificationClick(n.id)}
+                >
+                  <span className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${n.read_status ? 'bg-slate-200 dark:bg-gray-700' : 'bg-blue-500 text-white dark:bg-blue-600'} text-xl`}> <LightBulbIcon className="w-6 h-6" /> </span>
+                  <span>{n.content}</span>
+                  <span className="text-xs text-slate-400 mt-1">{new Date(n.timestamp).toLocaleString()}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="px-4 py-2 border-t text-right">
+            <a
+              href="/notifications"
+              className="text-blue-600 hover:underline text-xs font-medium"
+              onClick={() => setDropdownOpen(false)}
+            >
+              View all
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+} 
