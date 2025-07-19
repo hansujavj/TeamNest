@@ -7,8 +7,6 @@ import type { User, Profile, Team } from "@/types";
 
 export default function TeamsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [leadTeams, setLeadTeams] = useState<Team[]>([]);
   const [memberTeams, setMemberTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,14 +18,12 @@ export default function TeamsPage() {
         router.push("/login");
         return;
       }
-      setUser(user as User);
       // Fetch user profile for name
       const { data: profileData } = await supabase
         .from("profiles")
         .select("id, name, email")
         .eq("id", user.id)
         .single();
-      setProfile(profileData as Profile);
       // Teams you lead
       const { data: leadTeams } = await supabase
         .from("teams")

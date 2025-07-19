@@ -7,7 +7,6 @@ import type { User } from "@/types";
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
   const [notifications, setNotifications] = useState<{ id: string; read_status: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +18,6 @@ export default function NotificationsPage() {
         router.push("/login");
         return;
       }
-      setUser(user as User);
       // Get notifications
       const { data: notifications } = await supabase
         .from("notifications")
@@ -42,8 +40,6 @@ export default function NotificationsPage() {
 
   if (loading) return <div className="p-8">Loading...</div>;
 
-  const allRead = notifications.length > 0 && notifications.every((n) => n.read_status);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F1F5F9] to-[#E0E7EF] pb-20 px-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-2xl bg-white/90 border border-[#D4C9BE] rounded-2xl shadow-lg p-8 flex flex-col gap-8 mt-10">
@@ -54,7 +50,7 @@ export default function NotificationsPage() {
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 bg-white/80 rounded-2xl shadow-inner border border-[#D4C9BE]/60">
             <CheckCircleIcon className="w-16 h-16 text-green-400 mb-4 animate-bounce" />
-            <div className="text-lg font-semibold text-[#123458]/60">You're all caught up!</div>
+            <div className="text-lg font-semibold text-[#123458]/60">You&apos;re all caught up!</div>
             <div className="text-sm text-[#123458]/40 mt-2">No notifications at the moment.</div>
           </div>
         ) : (

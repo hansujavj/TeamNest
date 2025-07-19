@@ -3,25 +3,14 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
-import { SparklesIcon } from "@heroicons/react/24/solid";
-import { UsersIcon, ClipboardDocumentListIcon, MoonIcon, SunIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
-import type { User, Profile, Team, Task, TaskAssignment } from "@/types";
-
-function getStatusBadge(status: string) {
-  const base = "px-2 py-0.5 rounded-full text-xs font-semibold inline-block";
-  if (status === "completed") return <span className={base + " bg-green-100 text-green-700"}>Completed</span>;
-  if (status === "in progress") return <span className={base + " bg-yellow-100 text-yellow-700"}>In Progress</span>;
-  return <span className={base + " bg-gray-200 text-gray-700"}>Pending</span>;
-}
+import { UsersIcon } from "@heroicons/react/24/outline";
+import type { User, Profile, Team, TaskAssignment } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [assignedTasks, setAssignedTasks] = useState<TaskAssignment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [dark, setDark] = useState(false);
   const joinInputRef = useRef<HTMLInputElement>(null);
   const [leadTeams, setLeadTeams] = useState<Team[]>([]);
   const [memberTeams, setMemberTeams] = useState<Team[]>([]);
@@ -139,7 +128,6 @@ export default function DashboardPage() {
 
   // Determine display name for welcome
   const displayName = profile?.name || (user?.email ? user.email.split('@')[0] : '');
-  const avatarLetter = (profile?.name || user?.email || "U").charAt(0).toUpperCase();
 
   if (loading) return <div className="p-8">Loading...</div>;
 

@@ -2,13 +2,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import type { User, Team, Profile } from "@/types";
+import type { User } from "@/types";
 
 export default function SelectDomainsPage() {
   const { teamId } = useParams();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [domains, setDomains] = useState<any[]>([]);
+  const [domains, setDomains] = useState<unknown[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -31,7 +31,7 @@ export default function SelectDomainsPage() {
         .from("member_domains")
         .select("domain_id")
         .eq("user_id", user.id);
-      setSelected((prefs || []).map((p: any) => p.domain_id));
+      setSelected((prefs || []).map((p: unknown) => (p as { domain_id: string }).domain_id));
       setLoading(false);
     };
     fetchData();
@@ -54,7 +54,7 @@ export default function SelectDomainsPage() {
       .from("member_domains")
       .delete()
       .eq("user_id", user?.id)
-      .in("domain_id", domains.map((d) => d.id));
+      .in("domain_id", domains.map((d) => (d as { id: string }).id));
     if (delError) {
       setError(delError.message);
       setSaving(false);
@@ -90,19 +90,19 @@ export default function SelectDomainsPage() {
           ) : (
             <div className="flex flex-col gap-3">
               {domains.map((domain) => {
-                const isSelected = selected.includes(domain.id);
+                const isSelected = selected.includes((domain as { id: string }).id);
                 return (
                   <label
-                    key={domain.id}
+                    key={(domain as { id: string }).id}
                     className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border border-[#D4C9BE]/40 transition font-semibold text-base ${isSelected ? 'bg-[#123458] text-white' : 'bg-[#D4C9BE]/30 text-[#123458] hover:bg-[#D4C9BE]/60'}`}
                   >
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={() => handleToggle(domain.id)}
+                      onChange={() => handleToggle((domain as { id: string }).id)}
                       className="accent-[#123458] w-5 h-5 rounded border border-[#123458]/40"
                     />
-                    <span className={isSelected ? 'font-bold text-white' : 'font-semibold text-[#123458]'}>{domain.name}</span>
+                    <span className={isSelected ? 'font-bold text-white' : 'font-semibold text-[#123458]'}>{(domain as { name: string }).name}</span>
                   </label>
                 );
               })}

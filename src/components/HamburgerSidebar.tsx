@@ -7,15 +7,8 @@ import {
   Bars3Icon,
   XMarkIcon,
   HomeIcon,
-  FolderOpenIcon,
-  ChartBarIcon,
-  UsersIcon,
   DocumentTextIcon,
-  UserCircleIcon,
-  ArrowPathIcon,
-  Cog6ToothIcon,
-  MoonIcon,
-  SunIcon,
+  UsersIcon,
   BellIcon,
   CalendarDaysIcon,
   ArrowRightOnRectangleIcon,
@@ -31,7 +24,6 @@ const menuItems = [
 
 export default function HamburgerSidebar({ unreadNotifications = 0, activePath = "" }) {
   const [open, setOpen] = useState(false);
-  const [dark, setDark] = useState(false);
   const sidebarRef = useRef(null);
   const router = useRouter();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);

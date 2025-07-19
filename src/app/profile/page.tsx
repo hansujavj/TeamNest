@@ -13,13 +13,7 @@ function getStatusBadge(status: string) {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [assignedTasks, setAssignedTasks] = useState<TaskAssignment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [debugAssignments, setDebugAssignments] = useState<TaskAssignment[]>([]);
-  const [leadTeams, setLeadTeams] = useState<Team[]>([]);
-  const [allLeadTasks, setAllLeadTasks] = useState<(Task & { teamName: string })[]>([]);
   const [assignmentHistory, setAssignmentHistory] = useState<TaskAssignment[]>([]);
   const [teamsMap, setTeamsMap] = useState<Record<string, string>>({});
 
@@ -30,41 +24,11 @@ export default function ProfilePage() {
         router.push("/login");
         return;
       }
-      setUser(user as User);
-      // Fetch user profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("id, name, email")
-        .eq("id", user.id)
-        .single();
-      setProfile(profileData as Profile);
-      // Fetch teams where user is lead
-      const { data: leadTeams } = await supabase
-        .from("teams")
-        .select("id, name, created_by")
-        .eq("created_by", user.id);
-      setLeadTeams((leadTeams || []) as Team[]);
-      // If user is a lead, fetch all tasks for those teams
-      let allLeadTasks: (Task & { teamName: string })[] = [];
-      if (leadTeams && leadTeams.length > 0) {
-        const teamIds = (leadTeams as Team[]).map((t) => t.id);
-        const { data: tasks } = await supabase
-          .from("tasks")
-          .select("id, title, team_id, due_date, priority, created_by, status")
-          .in("team_id", teamIds);
-        // Attach team name
-        allLeadTasks = (tasks || []).map((task: Task) => ({
-          ...task,
-          teamName: (leadTeams as Team[]).find((t) => t.id === task.team_id)?.name || "Unknown Team",
-        }));
-      }
-      setAllLeadTasks(allLeadTasks);
       // Fetch all assigned tasks for this user (across all teams)
       const { data: assignments } = await supabase
         .from("task_assignments")
         .select("*, tasks(id, title, team_id, due_date, priority), teams(name)")
         .eq("user_id", user.id);
-      setDebugAssignments((assignments || []) as TaskAssignment[]);
       // Join with team info
       let tasksWithTeam: TaskAssignment[] = [];
       if (assignments && assignments.length > 0) {
@@ -88,7 +52,6 @@ export default function ProfilePage() {
           priority: a.tasks?.priority,
         }));
       }
-      setAssignedTasks(tasksWithTeam);
       // Fetch all assignments ever for this user (history)
       const { data: allAssignments } = await supabase
         .from("task_assignments")

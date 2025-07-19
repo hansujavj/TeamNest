@@ -8,7 +8,6 @@ export default function CreateTaskPage() {
   const { teamId } = useParams();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [team, setTeam] = useState<Team | null>(null);
   const [domains, setDomains] = useState<{ id: string; name: string }[]>([]);
   const [members, setMembers] = useState<(Profile & { preferredDomains: string[] })[]>([]);
   const [domainId, setDomainId] = useState("");
@@ -30,7 +29,6 @@ export default function CreateTaskPage() {
       setUser(user as User);
       // Get team
       const { data: team } = await supabase.from("teams").select("id, name, created_by").eq("id", teamId).single();
-      setTeam(team as Team);
       if ((team as Team)?.created_by !== user.id) {
         setError("Only the Team Lead can create tasks.");
         setLoading(false);
@@ -123,14 +121,6 @@ export default function CreateTaskPage() {
 
   if (loading) return <div className="p-8">Loading...</div>;
   if (error) return <div className="p-8 text-red-500">{error}</div>;
-
-  // Filter members by selected domain preference
-  const preferredMembers = domainId
-    ? members.filter((m) => m.preferredDomains.includes(domainId))
-    : [];
-  const otherMembers = domainId
-    ? members.filter((m) => !m.preferredDomains.includes(domainId))
-    : members;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F1F5F9] to-[#E0E7EF] px-4">

@@ -1,6 +1,7 @@
 "use client";
 import UserMenu from "./UserMenu";
 import NotificationBell from "./NotificationBell";
+import Link from 'next/link';
 
 export default function Navbar() {
   return (
@@ -13,7 +14,7 @@ export default function Navbar() {
         {/* Nav Links Centered */}
         <div className="flex-1 flex justify-center gap-8">
           <a href="/dashboard" className="text-slate-700 hover:text-slate-900 font-medium transition">Dashboard</a>
-          <a href="/team" className="text-slate-700 hover:text-slate-900 font-medium transition">Teams</a>
+          <Link href="/team" className="text-slate-700 hover:text-slate-900 font-medium transition">Teams</Link>
         </div>
         <div className="flex items-center gap-4">
           <NotificationBell />

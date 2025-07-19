@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { getDomainColor } from "@/utils/domainColors";
 import toast from "react-hot-toast";
 import { UsersIcon, ClipboardDocumentListIcon, SparklesIcon, UserCircleIcon, LinkIcon, PlusIcon } from "@heroicons/react/24/solid";
 import type { User, Profile, Team, Task, TaskAssignment } from "@/types";

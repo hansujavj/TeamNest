@@ -3,7 +3,6 @@ import HamburgerSidebar from "@/components/HamburgerSidebar";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import type { User } from "@/types";
 
 export default function HamburgerSidebarWrapper() {
   const pathname = usePathname();
