@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { BellIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
-import type { User } from "@/types";
 
 export default function NotificationsPage() {
   const router = useRouter();

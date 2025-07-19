@@ -58,7 +58,7 @@ export default function TeamPage() {
       const { data: assignments } = await supabase
         .from("task_assignments")
         .select("*, profiles(name, email)")
-        .in("task_id", (tasks || []).map((t: unknown) => (t as Task).id));
+        .in("task_id", (tasks || []).map((t: Task) => t.id));
       setAssignments((assignments || []) as TaskAssignment[]);
       setLoading(false);
       // Fetch team activities
