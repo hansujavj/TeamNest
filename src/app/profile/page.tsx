@@ -5,18 +5,9 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import type { Team, TaskAssignment, Profile } from "@/types";
 
-function getStatusBadge(status: string) {
-  const base = "px-2 py-0.5 rounded-full text-xs font-semibold inline-block";
-  if (status === "completed") return <span className={base + " bg-green-100 text-green-700"}>Completed</span>;
-  if (status === "in progress") return <span className={base + " bg-yellow-100 text-yellow-700"}>In Progress</span>;
-  return <span className={base + " bg-gray-200 text-gray-700"}>Pending</span>;
-}
-
 export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [assignmentHistory, setAssignmentHistory] = useState<TaskAssignment[]>([]);
-  const [teamsMap, setTeamsMap] = useState<Record<string, string>>({});
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [leadTeams, setLeadTeams] = useState<Team[]>([]);
   const [memberTeams, setMemberTeams] = useState<Team[]>([]);

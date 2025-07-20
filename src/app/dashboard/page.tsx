@@ -1,27 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
-import { SparklesIcon } from "@heroicons/react/24/solid";
-import { UsersIcon, ClipboardDocumentListIcon, MoonIcon, SunIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
-
-function getStatusBadge(status: string) {
-  const base = "px-2 py-0.5 rounded-full text-xs font-semibold inline-block";
-  if (status === "completed") return <span className={base + " bg-green-100 text-green-700"}>Completed</span>;
-  if (status === "in progress") return <span className={base + " bg-yellow-100 text-yellow-700"}>In Progress</span>;
-  return <span className={base + " bg-gray-200 text-gray-700"}>Pending</span>;
-}
+import { UsersIcon, ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [profile, setProfile] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
-  const [assignedTasks, setAssignedTasks] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [dark, setDark] = useState(false);
   const joinInputRef = useRef<HTMLInputElement>(null);
   const [leadTeams, setLeadTeams] = useState<any[]>([]);
   const [memberTeams, setMemberTeams] = useState<any[]>([]);
