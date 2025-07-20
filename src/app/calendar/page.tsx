@@ -5,7 +5,8 @@ import "react-calendar/dist/Calendar.css";
 
 const Calendar = dynamic(() => import("react-calendar"), { ssr: false });
 
-type Value = Date | Date[] | null;
+type ValuePiece = Date | null;
+type Value = ValuePiece | [ValuePiece, ValuePiece];
 
 export default function CalendarPage() {
   const [date, setDate] = useState<Value>(new Date());
@@ -17,7 +18,11 @@ export default function CalendarPage() {
     return `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getFullYear()}`;
   }
 
-  const selectedDateStr = date ? (Array.isArray(date) ? date[0]?.toDateString() : date.toDateString()) : '';
+  const selectedDateStr = date
+    ? Array.isArray(date)
+      ? (date[0] ? date[0].toDateString() : '')
+      : date.toDateString()
+    : '';
   const eventsForDate = events.filter((e) => e.date === selectedDateStr);
 
   function handleAddEvent(e: React.FormEvent) {
