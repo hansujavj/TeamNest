@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -24,9 +23,8 @@ export default function TeamPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
   const [isLead, setIsLead] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
-  const [activities, setActivities] = useState<any[]>([]); // keep as any[] for now
+  const [activities, setActivities] = useState<{ [key: string]: unknown }[]>([]);
   const [activityInput, setActivityInput] = useState("");
   const [activityLoading, setActivityLoading] = useState(false);
   const [preferredDomainIds, setPreferredDomainIds] = useState<string[]>([]);
@@ -81,7 +79,6 @@ export default function TeamPage() {
         .select("*, profiles(name, email)")
         .in("task_id", (tasks || []).map((t: Task) => t.id));
       setAssignments((assignments || []) as TaskAssignment[]);
-      setLoading(false);
       // Fetch team activities
       const { data: teamActivities } = await supabase
         .from("team_activities")
@@ -325,7 +322,7 @@ export default function TeamPage() {
                 ...members.filter((m) => m.user_id === currentUserId),
                 ...members.filter((m) => m.user_id !== currentUserId),
               ].map((m) => {
-                const memberProfile = (m.profiles as any);
+                const memberProfile = (m.profiles as Profile);
                 const isCurrentUser = m.user_id === currentUserId;
                 return (
                   <li key={m.user_id} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full">
@@ -367,8 +364,7 @@ export default function TeamPage() {
             </div>
             <ul className="grid gap-6 sm:grid-cols-2">
               {tasks.map((task) => {
-                const assignment = getAssignment(task.id) as any;
-                const taskDomain = (task as any).domain;
+                const assignment = getAssignment(task.id) as TaskAssignment | undefined;
                 const isAssignedToMe = assignment && assignment.user_id === currentUserId;
                 return (
                   <li key={task.id} className="p-5 bg-white border border-[#D4C9BE] rounded-2xl shadow-md flex flex-col gap-2 hover:shadow-lg hover:scale-[1.01] transition-all">
@@ -386,7 +382,7 @@ export default function TeamPage() {
                         </button>
                       )}
                     </div>
-                    <div className="text-sm text-[#123458]/80 mb-1">{(task as any).description}</div>
+                    <div className="text-sm text-[#123458]/80 mb-1">{task.description}</div>
                     {assignment && (
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs mt-2">
                         <span className="flex items-center gap-1 text-[#123458]">

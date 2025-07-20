@@ -2,15 +2,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import type { Task, TaskAssignment, User } from "@/types";
+import type { Task, User } from "@/types";
 import { ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
 
 export default function TasksPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
   const [assignedTasks, setAssignedTasks] = useState<Task[]>([]);
   const [createdTasks, setCreatedTasks] = useState<Task[]>([]);
-  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -19,20 +17,18 @@ export default function TasksPage() {
         router.push("/login");
         return;
       }
-      setUser(user);
       // Fetch tasks assigned to me
       const { data: assignments } = await supabase
         .from("task_assignments")
         .select("*, tasks(id, title, team_id, status, created_by)")
         .eq("user_id", user.id);
-      setAssignedTasks((assignments || []).map((a: any) => a.tasks).filter(Boolean));
+      setAssignedTasks((assignments || []).map((a: { tasks: Task }) => a.tasks).filter(Boolean));
       // Fetch tasks created by me
       const { data: created } = await supabase
         .from("tasks")
         .select("id, title, team_id, status, created_by")
         .eq("created_by", user.id);
       setCreatedTasks(created || []);
-      setLoading(false);
     };
     fetchTasks();
   }, [router]);
@@ -71,7 +67,7 @@ export default function TasksPage() {
             <h1 className="text-2xl font-extrabold tracking-tight text-[#123458]">Tasks Created by You</h1>
           </div>
           {createdTasks.length === 0 ? (
-            <div className="text-[#123458] text-base opacity-70">You haven't created any tasks yet.</div>
+            <div className="text-[#123458] text-base opacity-70">You haven&apos;t created any tasks yet.</div>
           ) : (
             <ul className="space-y-4">
               {createdTasks.map((task) => (

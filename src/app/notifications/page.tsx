@@ -7,9 +7,7 @@ import { BellIcon, CheckCircleIcon, XMarkIcon } from "@heroicons/react/24/outlin
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<{ id: string; read_status: boolean }[]>([]);
   const [notificationsWithTeams, setNotificationsWithTeams] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -25,9 +23,7 @@ export default function NotificationsPage() {
         .select("id, user_id, content, read_status, timestamp, team_id, task_id")
         .eq("user_id", user.id)
         .order("timestamp", { ascending: false });
-      setNotifications((notifications || []) as { id: string; read_status: boolean }[]);
       console.log("Notifications:", notifications);
-      setLoading(false);
       // Mark all as read
       if (notifications && notifications.some((n) => !n.read_status)) {
         await supabase
@@ -66,7 +62,6 @@ export default function NotificationsPage() {
       .update({ read_status: true })
       .eq("id", id);
     setNotificationsWithTeams((prev) => prev.filter((n) => n.id !== id));
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   return (

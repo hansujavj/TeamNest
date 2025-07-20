@@ -11,7 +11,6 @@ export default function TeamsPage() {
   const [leadTeams, setLeadTeams] = useState<Team[]>([]);
   const [memberTeams, setMemberTeams] = useState<Team[]>([]);
   const [memberTeamsLeads, setMemberTeamsLeads] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getUserAndTeams = async (): Promise<void> => {
@@ -49,7 +48,6 @@ export default function TeamsPage() {
         });
         setMemberTeamsLeads(leadsMap);
       }
-      setLoading(false);
     };
     getUserAndTeams();
   }, [router]);

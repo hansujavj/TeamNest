@@ -15,7 +15,6 @@ export default function CreateTaskPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -31,7 +30,6 @@ export default function CreateTaskPage() {
       const { data: team } = await supabase.from("teams").select("id, name, created_by").eq("id", teamId).single();
       if ((team as Team)?.created_by !== user.id) {
         setError("Only the Team Lead can create tasks.");
-        setLoading(false);
         return;
       }
       // Get domains
@@ -68,7 +66,6 @@ export default function CreateTaskPage() {
           .map((md) => md.domain_id),
       }));
       setMembers(members);
-      setLoading(false);
     };
     fetchData();
   }, [teamId, router]);

@@ -3,14 +3,13 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
-import { UsersIcon, ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
-import type { User, Profile, Team, Task } from "@/types";
+import { UsersIcon } from "@heroicons/react/24/outline";
+import type { User, Profile, Team } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
   const joinInputRef = useRef<HTMLInputElement>(null);
   const [leadTeams, setLeadTeams] = useState<Team[]>([]);
   const [memberTeams, setMemberTeams] = useState<Team[]>([]);
@@ -42,7 +41,6 @@ export default function DashboardPage() {
       // Remove teamName and teamId properties from mapped objects if not in Task type.
       // Remove any code that tries to use properties not in the type.
       // Remove any remaining 'any' usage.
-      setLoading(false);
     };
     getUserAndTasks();
   }, [router]);

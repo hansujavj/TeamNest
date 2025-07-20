@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import type { Team, TaskAssignment, Profile } from "@/types";
+import type { Team, Profile } from "@/types";
 import { PencilIcon } from "@heroicons/react/24/outline";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [leadTeams, setLeadTeams] = useState<Team[]>([]);
   const [memberTeams, setMemberTeams] = useState<Team[]>([]);
@@ -58,7 +57,6 @@ export default function ProfilePage() {
         });
         setMemberTeamsLeads(leadsMap);
       }
-      setLoading(false);
     };
     fetchProfileAndTeams();
   }, [router]);
