@@ -33,7 +33,7 @@ export default function CalendarPage() {
       <div className="bg-white/90 rounded-2xl shadow-lg p-8 max-w-md w-full flex flex-col items-center">
         <h1 className="text-3xl font-bold text-[#123458] mb-6">Calendar</h1>
         <Calendar
-          onChange={setDate}
+          onChange={(value) => setDate(value)}
           value={date}
           className="w-full rounded-xl border border-[#D4C9BE] shadow"
           tileClassName={({ date, view }) => {
