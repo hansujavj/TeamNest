@@ -49,7 +49,14 @@ export default function TeamPage() {
         .from("team_members")
         .select("user_id, profiles(id, name, email, role)")
         .eq("team_id", teamId);
-      setMembers((members || []) as { user_id: string; profiles: Profile }[]);
+      setMembers(
+        (members || [])
+          .map((m: { user_id: string; profiles: Profile | Profile[] }) => ({
+            user_id: m.user_id,
+            profiles: Array.isArray(m.profiles) ? m.profiles[0] : m.profiles,
+          }))
+          .filter((m) => m.profiles)
+      );
       const { data: domains } = await supabase
         .from("domains")
         .select("id, name")
