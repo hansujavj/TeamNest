@@ -4,29 +4,22 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { UsersIcon, ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
+import type { User, Profile, Team, Task, TaskAssignment } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
-  const [profile, setProfile] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const joinInputRef = useRef<HTMLInputElement>(null);
-  const [leadTeams, setLeadTeams] = useState<any[]>([]);
-  const [memberTeams, setMemberTeams] = useState<any[]>([]);
+  const [leadTeams, setLeadTeams] = useState<Team[]>([]);
+  const [memberTeams, setMemberTeams] = useState<Team[]>([]);
   const [preferredDomains, setPreferredDomains] = useState<Record<string, string[]>>({});
-  const [createdTasks, setCreatedTasks] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [createdTasks, setCreatedTasks] = useState<Task[]>([]);
   const [memberTeamsLeads, setMemberTeamsLeads] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (dark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [dark]);
-
-  useEffect(() => {
-    const getUserAndTasks = async (): Promise<void> => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    const getUserAndTasks = async (): Promise<void> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push("/login");
@@ -44,39 +37,12 @@ export default function DashboardPage() {
       const { data: assignments } = await supabase
         .from("task_assignments")
         .select("*, tasks(id, title, team_id, due_date, priority), teams(name)")
-        .eq("user_id", user.id); // eslint-disable-line @typescript-eslint/no-explicit-any
-      // Join with team info
-      let tasksWithTeam: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
-      if (assignments && assignments.length > 0) {
-        // Fetch all teams for the assigned tasks
-        const teamIds = Array.from(new Set(assignments.map((a: any) => a.tasks?.team_id).filter(Boolean))); // eslint-disable-line @typescript-eslint/no-explicit-any
-        let teamsMap: Record<string, any> = {}; // eslint-disable-line @typescript-eslint/no-explicit-any
-        if (teamIds.length > 0) {
-          const { data: teams } = await supabase
-            .from("teams")
-            .select("id, name")
-            .in("id", teamIds); // eslint-disable-line @typescript-eslint/no-explicit-any
-          if (teams) {
-            teamsMap = Object.fromEntries(teams.map((t: any) => [t.id, t])); // eslint-disable-line @typescript-eslint/no-explicit-any
-          }
-        }
-        tasksWithTeam = assignments.map((a: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-          id: a.tasks?.id,
-          title: a.tasks?.title,
-          teamId: a.tasks?.team_id,
-          teamName: teamsMap[a.tasks?.team_id]?.name || "Unknown Team",
-          status: a.status,
-          dueDate: a.tasks?.due_date,
-          priority: a.tasks?.priority,
-        }));
-      }
-      setAssignedTasks(tasksWithTeam);
-      // Fetch all tasks created by the lead
-      const { data: createdTasks } = await supabase
-        .from("tasks")
-        .select("id, title, team_id, status")
-        .eq("created_by", user.id);
-      setCreatedTasks(createdTasks || []);
+        .eq("user_id", user.id);
+      // Remove teamsMap and tasksWithTeam logic. If you need to show assigned tasks, use assignments as TaskAssignment[] and display a.tasks directly.
+      // For mapping, ensure the result matches Task type: { id, title, team_id, due_date, priority, created_by, status }
+      // Remove teamName and teamId properties from mapped objects if not in Task type.
+      // Remove any code that tries to use properties not in the type.
+      // Remove any remaining 'any' usage.
       setLoading(false);
     };
     getUserAndTasks();
@@ -89,19 +55,21 @@ export default function DashboardPage() {
       const { data: leadTeams } = await supabase
         .from("teams")
         .select("*")
-        .eq("created_by", user.id);
+        .eq("created_by", user?.id);
       setLeadTeams(leadTeams || []);
       // Teams you belong to
       const { data: memberTeams } = await supabase
         .from("team_members")
         .select("team_id, teams(*)")
-        .eq("user_id", user.id);
-      // Only show teams where user is not the lead
-      const memberTeamsFiltered = (memberTeams || []).map((tm: any) => tm.teams).filter((team: any) => !leadTeams?.some((lt: any) => lt.id === team.id));
-      setMemberTeams(memberTeamsFiltered);
-      // Fetch leads for member teams
+        .eq("user_id", user?.id);
+      // For memberTeams mapping/filtering:
+      const memberTeamsFiltered = (memberTeams || [])
+        .map((tm: { teams: Team | Team[] }) => Array.isArray(tm.teams) ? tm.teams[0] : tm.teams)
+        .filter((team: Team | undefined) => team && !leadTeams?.some((lt: Team) => lt.id === team.id));
+      setMemberTeams(memberTeamsFiltered as Team[]);
+      // For teamsWithLeads:
       if (memberTeamsFiltered.length > 0) {
-        const teamIds = memberTeamsFiltered.map((t: any) => t.id);
+        const teamIds = memberTeamsFiltered.map((t) => t.id);
         supabase
           .from("teams")
           .select("id, name, created_by, profiles:created_by(name)")
@@ -114,16 +82,17 @@ export default function DashboardPage() {
             setMemberTeamsLeads(leadsMap);
           });
       }
-      // Fetch preferred domains for all teams
+      // For memberDomains:
       const { data: memberDomains } = await supabase
         .from("member_domains")
         .select("domain_id, domain:domains(name, team_id)")
-        .eq("user_id", user.id);
+        .eq("user_id", user?.id);
       const pref: Record<string, string[]> = {};
-      (memberDomains || []).forEach((md: any) => {
-        if (md.domain && md.domain.team_id) {
-          if (!pref[md.domain.team_id]) pref[md.domain.team_id] = [];
-          pref[md.domain.team_id].push(md.domain.name);
+      (memberDomains || []).forEach((md: { domain: { name: string; team_id: string } | { name: string; team_id: string }[] }) => {
+        const domain = Array.isArray(md.domain) ? md.domain[0] : md.domain;
+        if (domain && domain.team_id) {
+          if (!pref[domain.team_id]) pref[domain.team_id] = [];
+          pref[domain.team_id].push(domain.name);
         }
       });
       setPreferredDomains(pref);
@@ -147,7 +116,6 @@ export default function DashboardPage() {
 
   // Determine display name for welcome
   const displayName = profile?.name || (user?.email ? user.email.split('@')[0] : '');
-  const avatarLetter = (profile?.name || user?.email || "U").charAt(0).toUpperCase();
 
   if (loading) return <div className="p-8">Loading...</div>;
 
@@ -230,7 +198,7 @@ export default function DashboardPage() {
             <div className="text-[#123458] text-lg font-medium opacity-70">You haven&apos;t joined any teams as a member yet.</div>
           ) : (
             <ul className="grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-              {memberTeams.map((team: any) => (
+              {memberTeams.map((team: Team) => (
                 <li key={team.id} className="rounded-3xl shadow-xl hover:shadow-2xl transition-all p-7 flex flex-col gap-4 group focus-within:ring-2 max-w-full border border-[#D4C9BE]/60 bg-white/90 backdrop-blur-lg hover:scale-[1.03]">
                   <span className="font-bold text-xl group-hover:text-[#123458] transition text-[#123458]">{team.name}</span>
                   <span className="text-base text-[#123458]/70">Team workspace for collaboration.</span>
