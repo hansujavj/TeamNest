@@ -270,18 +270,18 @@ export default function TeamPage() {
           {/* Domains */}
           <div className="col-span-1 rounded-2xl shadow-lg bg-white/90 border border-[#D4C9BE] p-7 flex flex-col gap-3">
             <div className="flex items-center gap-2 text-[#123458] text-lg font-bold mb-2"><ClipboardDocumentListIcon className="w-6 h-6"/> Domains</div>
-            <ul className="flex flex-wrap gap-2 mb-2">
+            <ul className="flex flex-col gap-2 mb-2">
               {domains.map((d) => (
                 <li
                   key={d.id}
-                  className={`px-3 py-1 rounded-full border text-xs font-semibold border-[#123458] ${preferredDomainIds.includes(d.id) ? 'bg-[#123458] text-white font-bold' : 'bg-[#D4C9BE] text-[#123458]'}`}
+                  className="flex items-center gap-1"
                 >
-                  {d.name}
+                  <span className={`px-3 py-1 rounded-full border text-xs font-semibold border-[#123458] ${preferredDomainIds.includes(d.id) ? 'bg-[#123458] text-white font-bold' : 'bg-[#D4C9BE] text-[#123458]'}`}>{d.name}</span>
                   {isLead && (
-                    <span className="ml-2 flex gap-1">
+                    <>
                       <button onClick={() => setEditingDomain({ id: d.id, name: d.name })}><PencilIcon className="w-4 h-4 text-gray-400 hover:text-blue-500 transition" /></button>
                       <button onClick={() => setDeletingDomain(d.id)}><TrashIcon className="w-4 h-4 text-gray-400 hover:text-red-500 transition" /></button>
-                    </span>
+                    </>
                   )}
                 </li>
               ))}

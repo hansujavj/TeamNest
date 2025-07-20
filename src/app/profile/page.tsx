@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import type { Team, TaskAssignment, Profile } from "@/types";
+import { PencilIcon } from "@heroicons/react/24/outline";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function ProfilePage() {
   const [leadTeams, setLeadTeams] = useState<Team[]>([]);
   const [memberTeams, setMemberTeams] = useState<Team[]>([]);
   const [memberTeamsLeads, setMemberTeamsLeads] = useState<Record<string, string>>(/* teamId: leadName */ {});
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState(userProfile?.name || "");
 
   useEffect(() => {
     const fetchProfileAndTeams = async () => {
@@ -62,13 +65,46 @@ export default function ProfilePage() {
 
   if (loading) return <div className="p-8">Loading...</div>;
 
+  const handleSaveName = async () => {
+    if (!newName.trim() || !userProfile) return;
+    await supabase.from("profiles").update({ name: newName.trim() }).eq("id", userProfile.id);
+    setUserProfile({ ...userProfile, name: newName.trim() });
+    setEditingName(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F1F5F9] to-[#E0E7EF] pb-20 px-4">
       <div className="max-w-3xl mx-auto pt-12">
         <h1 className="text-3xl font-bold text-[#123458] mb-6">My Profile</h1>
         {userProfile && (
           <div className="bg-white/90 rounded-xl shadow p-5 mb-8 flex flex-col gap-2 border-l-4 border-[#123458]">
-            <span className="font-semibold text-[#123458] text-lg">{userProfile.name}</span>
+            <span className="font-semibold text-[#123458] text-lg flex items-center gap-2">
+              {editingName ? (
+                <>
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={e => setNewName(e.target.value)}
+                    className="px-2 py-1 rounded border border-[#123458] text-black"
+                    maxLength={40}
+                    autoFocus
+                  />
+                  <button
+                    className="px-3 py-1 rounded bg-[#123458] text-white hover:bg-[#D4C9BE] hover:text-[#123458] transition text-xs font-semibold"
+                    onClick={handleSaveName}
+                  >Save</button>
+                  <button
+                    className="px-3 py-1 rounded bg-gray-200 text-[#123458] hover:bg-gray-300 transition text-xs font-semibold"
+                    onClick={() => { setEditingName(false); setNewName(userProfile.name); }}
+                  >Cancel</button>
+                </>
+              ) : (
+                <>
+                  {userProfile.name}
+                  <button onClick={() => setEditingName(true)}><PencilIcon className="w-4 h-4 text-gray-400 hover:text-blue-500 transition" /></button>
+                </>
+              )}
+            </span>
             <span className="text-xs text-[#123458]/80">{userProfile.email}</span>
           </div>
         )}
