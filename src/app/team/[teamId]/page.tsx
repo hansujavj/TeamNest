@@ -39,6 +39,7 @@ export default function TeamPage() {
   const [editingDomain, setEditingDomain] = useState<{ id: string; name: string } | null>(null);
   const [deletingDomain, setDeletingDomain] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showDeleteTeam, setShowDeleteTeam] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -231,6 +232,18 @@ export default function TeamPage() {
     setEditingTask(null);
   };
 
+  // Add handler for deleting the team
+  const handleDeleteTeam = async () => {
+    if (!team) return;
+    // Optionally: delete related data (team_members, tasks, domains, etc.)
+    await supabase.from("teams").delete().eq("id", team.id);
+    // Optionally: await supabase.from("team_members").delete().eq("team_id", team.id);
+    // Optionally: await supabase.from("tasks").delete().eq("team_id", team.id);
+    // Optionally: await supabase.from("domains").delete().eq("team_id", team.id);
+    setShowDeleteTeam(false);
+    router.push("/dashboard");
+  };
+
   if (loading) return <div className="p-8">Loading...</div>;
   if (!team) return <div className="p-8 text-red-500">Team not found.</div>;
 
@@ -264,6 +277,14 @@ export default function TeamPage() {
             {isLead && (
               <button className="mt-2 bg-[#123458] hover:bg-[#D4C9BE] hover:text-[#123458] text-white px-4 py-2 rounded-xl font-semibold shadow transition-all" onClick={() => router.push(`/team/${teamId}/add-domain`)}>
                 + Add Domain
+              </button>
+            )}
+            {isLead && (
+              <button
+                className="mt-2 bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition"
+                onClick={() => setShowDeleteTeam(true)}
+              >
+                Delete Team
               </button>
             )}
           </div>
@@ -543,6 +564,18 @@ export default function TeamPage() {
             <div className="flex gap-4 w-full justify-center">
               <button className="px-5 py-2 rounded-lg bg-[#123458] text-white font-semibold hover:bg-[#D4C9BE] hover:text-[#123458] transition" onClick={handleEditTask}>Save</button>
               <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition" onClick={() => setEditingTask(null)}>Cancel</button>
+            </div>
+          </Dialog.Panel>
+        </Dialog>
+      )}
+      {showDeleteTeam && (
+        <Dialog open={showDeleteTeam} onClose={() => setShowDeleteTeam(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6 max-w-xs w-full border border-[#D4C9BE]">
+            <Dialog.Title className="text-lg font-bold text-[#123458]">Delete this team?</Dialog.Title>
+            <div className="text-[#123458]/80 mb-4">This action cannot be undone. All team data will be lost.</div>
+            <div className="flex gap-4 w-full justify-center">
+              <button className="px-5 py-2 rounded-lg bg-gray-500 text-white font-semibold hover:bg-gray-700 transition" onClick={handleDeleteTeam}>Yes, Delete</button>
+              <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition" onClick={() => setShowDeleteTeam(false)}>Cancel</button>
             </div>
           </Dialog.Panel>
         </Dialog>
