@@ -34,8 +34,8 @@ export default function HamburgerSidebar({ unreadNotifications = 0, activePath =
   // Close sidebar on outside click (mobile)
   useEffect(() => {
     if (!open) return;
-    function handleClick(e) {
-      if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+    function handleClick(e: MouseEvent) {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
