@@ -275,7 +275,7 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-extrabold tracking-tight text-[#123458]">Tasks You Created</h2>
           </div>
           {createdTasks.length === 0 ? (
-            <div className="text-[#123458] text-lg font-medium opacity-70">You haven't created any tasks yet.</div>
+            <div className="text-[#123458] text-lg font-medium opacity-70">You haven&apos;t created any tasks yet.</div>
           ) : (
             <ul className="grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
               {createdTasks.map((task) => (

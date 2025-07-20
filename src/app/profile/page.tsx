@@ -84,7 +84,7 @@ export default function ProfilePage() {
         <div className="mb-10">
           <h2 className="text-xl font-bold text-[#123458] mb-2">Teams You Lead</h2>
           {leadTeams.length === 0 ? (
-            <div className="text-[#123458] text-base opacity-70">You don't lead any teams yet.</div>
+            <div className="text-[#123458] text-base opacity-70">You don&apos;t lead any teams yet.</div>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2">
               {leadTeams.map((team) => (
@@ -101,7 +101,7 @@ export default function ProfilePage() {
         <div className="mb-10">
           <h2 className="text-xl font-bold text-[#123458] mb-2">Teams You&apos;re a Member Of</h2>
           {memberTeams.length === 0 ? (
-            <div className="text-[#123458] text-base opacity-70">You haven't joined any teams as a member yet.</div>
+            <div className="text-[#123458] text-base opacity-70">You haven&apos;t joined any teams as a member yet.</div>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2">
               {memberTeams.map((team) => (
