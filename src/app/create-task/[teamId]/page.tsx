@@ -87,6 +87,7 @@ export default function CreateTaskPage() {
           domain_id: domainId,
           team_id: teamId,
           created_by: user?.id,
+          status: "pending", // Add default status
         },
       ])
       .select()
@@ -113,6 +114,8 @@ export default function CreateTaskPage() {
         user_id: assignee,
         content: `You have been assigned a new task: ${title}`,
         read_status: false,
+        team_id: teamId,
+        task_id: task.id,
       },
     ]);
     setSaving(false);

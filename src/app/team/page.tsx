@@ -9,6 +9,7 @@ export default function TeamsPage() {
   const router = useRouter();
   const [leadTeams, setLeadTeams] = useState<Team[]>([]);
   const [memberTeams, setMemberTeams] = useState<Team[]>([]);
+  const [memberTeamsLeads, setMemberTeamsLeads] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,6 +35,19 @@ export default function TeamsPage() {
         .map((tm: { teams: Team | Team[] }) => Array.isArray(tm.teams) ? tm.teams[0] : tm.teams)
         .filter((team: Team | undefined) => team && !leadTeams?.some((lt: Team) => lt.id === team.id));
       setMemberTeams(memberTeamsFiltered as Team[]);
+      // Fetch leads for member teams
+      if (memberTeamsFiltered.length > 0) {
+        const teamIds = memberTeamsFiltered.map((t) => t.id);
+        const { data: teamsWithLeads } = await supabase
+          .from("teams")
+          .select("id, name, created_by, profiles:created_by(name)")
+          .in("id", teamIds);
+        const leadsMap: Record<string, string> = {};
+        (teamsWithLeads || []).forEach((t: any) => {
+          leadsMap[t.id] = t.profiles?.name || "Unknown";
+        });
+        setMemberTeamsLeads(leadsMap);
+      }
       setLoading(false);
     };
     getUserAndTeams();
@@ -83,6 +97,7 @@ export default function TeamsPage() {
                 <li key={team.id} className="rounded-3xl shadow-xl hover:shadow-2xl transition-all p-7 flex flex-col gap-4 group focus-within:ring-2 max-w-full border border-[#D4C9BE]/60 bg-white/90 backdrop-blur-lg hover:scale-[1.03]">
                   <span className="font-bold text-xl group-hover:text-[#123458] transition" style={{ color: '#123458' }}>{team.name}</span>
                   <span className="text-base" style={{ color: '#123458', opacity: 0.7 }}>Team workspace for collaboration.</span>
+                  <span className="text-xs text-[#123458]/70 block mt-1">Lead: {memberTeamsLeads[team.id] || "Unknown"}</span>
                   <button
                     className="mt-2 font-semibold px-4 py-2 rounded-lg text-base transition border border-[#D4C9BE] bg-gradient-to-r from-[#123458] to-[#D4C9BE] text-white hover:border-[#123458] hover:bg-[#D4C9BE]/90 hover:text-[#123458] hover:scale-105"
                     onClick={() => router.push(`/team/${team.id}`)}

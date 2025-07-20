@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import type { Team, TaskAssignment } from "@/types";
+import type { Team, TaskAssignment, Profile } from "@/types";
 
 function getStatusBadge(status: string) {
   const base = "px-2 py-0.5 rounded-full text-xs font-semibold inline-block";
@@ -16,65 +16,56 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [assignmentHistory, setAssignmentHistory] = useState<TaskAssignment[]>([]);
   const [teamsMap, setTeamsMap] = useState<Record<string, string>>({});
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [leadTeams, setLeadTeams] = useState<Team[]>([]);
+  const [memberTeams, setMemberTeams] = useState<Team[]>([]);
+  const [memberTeamsLeads, setMemberTeamsLeads] = useState<Record<string, string>>(/* teamId: leadName */ {});
 
   useEffect(() => {
-    const fetchProfileAndTasks = async () => {
+    const fetchProfileAndTeams = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push("/login");
         return;
       }
-      // Fetch all assigned tasks for this user (across all teams)
-      const { data: assignments } = await supabase
-        .from("task_assignments")
-        .select("*, tasks(id, title, team_id, due_date, priority), teams(name)")
+      // Fetch user profile
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, name, email")
+        .eq("id", user.id)
+        .single();
+      setUserProfile(profileData as Profile);
+      // Fetch teams you lead
+      const { data: leadTeams } = await supabase
+        .from("teams")
+        .select("id, name, created_by")
+        .eq("created_by", user.id);
+      setLeadTeams((leadTeams || []) as Team[]);
+      // Fetch teams you belong to (exclude teams you lead)
+      const { data: memberTeams } = await supabase
+        .from("team_members")
+        .select("team_id, teams(id, name, created_by)")
         .eq("user_id", user.id);
-      // Join with team info
-      let tasksWithTeam: TaskAssignment[] = [];
-      if (assignments && assignments.length > 0) {
-        const teamIds = Array.from(new Set((assignments as TaskAssignment[]).map((a) => a.tasks?.team_id).filter(Boolean)));
-        let teamsMap: Record<string, Team> = {};
-        if (teamIds.length > 0) {
-          const { data: teams } = await supabase
-            .from("teams")
-            .select("id, name, created_by")
-            .in("id", teamIds);
-          if (teams) {
-            teamsMap = Object.fromEntries((teams as Team[]).map((t) => [t.id, t]));
-          }
-        }
-        tasksWithTeam = (assignments as TaskAssignment[]).map((a) => ({
-          ...a,
-          teamId: a.tasks?.team_id,
-          teamName: a.tasks?.team_id ? (teamsMap[a.tasks?.team_id]?.name || "Unknown Team") : "Unknown Team",
-          title: a.tasks?.title,
-          dueDate: a.tasks?.due_date,
-          priority: a.tasks?.priority,
-        }));
-      }
-      // Fetch all assignments ever for this user (history)
-      const { data: allAssignments } = await supabase
-        .from("task_assignments")
-        .select("*, tasks(*)")
-        .eq("user_id", user.id)
-        .order("assigned_at", { ascending: false });
-      setAssignmentHistory((allAssignments || []) as TaskAssignment[]);
-      // Fetch team names for all unique team_ids in assignments
-      const teamIds = [...new Set((allAssignments || []).map((a: TaskAssignment) => a.tasks?.team_id).filter(Boolean))];
-      let teamsMap: Record<string, string> = {};
-      if (teamIds.length > 0) {
-        const { data: teams } = await supabase
+      const memberTeamsFiltered = (memberTeams || [])
+        .map((tm: { teams: Team | Team[] }) => Array.isArray(tm.teams) ? tm.teams[0] : tm.teams)
+        .filter((team: Team | undefined) => team && !leadTeams?.some((lt: Team) => lt.id === team.id));
+      setMemberTeams(memberTeamsFiltered as Team[]);
+      // Fetch leads for member teams
+      if (memberTeamsFiltered.length > 0) {
+        const teamIds = memberTeamsFiltered.map((t) => t.id);
+        const { data: teamsWithLeads } = await supabase
           .from("teams")
-          .select("id, name")
+          .select("id, name, created_by, profiles:created_by(name)")
           .in("id", teamIds);
-        if (teams) {
-          teamsMap = Object.fromEntries((teams as Team[]).map((t) => [t.id, t.name]));
-        }
+        const leadsMap: Record<string, string> = {};
+        (teamsWithLeads || []).forEach((t: any) => {
+          leadsMap[t.id] = t.profiles?.name || "Unknown";
+        });
+        setMemberTeamsLeads(leadsMap);
       }
-      setTeamsMap(teamsMap);
       setLoading(false);
     };
-    fetchProfileAndTasks();
+    fetchProfileAndTeams();
   }, [router]);
 
   if (loading) return <div className="p-8">Loading...</div>;
@@ -82,33 +73,48 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F1F5F9] to-[#E0E7EF] pb-20 px-4">
       <div className="max-w-3xl mx-auto pt-12">
-        <h1 className="text-3xl font-bold text-[#123458] mb-6">Task History</h1>
-        {assignmentHistory.length === 0 ? (
-          <div className="text-[#123458] text-base opacity-70">No task history yet.</div>
-        ) : (
-          <ul className="grid gap-6 sm:grid-cols-2 mb-10">
-            {assignmentHistory.map((a) => (
-              <li key={a.id + a.task_id} className="bg-white/90 rounded-xl shadow p-5 flex flex-col gap-2 border-l-4 border-[#123458] hover:bg-[#F1F5F9] transition cursor-pointer"
-                onClick={() => router.push(`/team/${a.tasks?.team_id}`)}
-                title="Go to team page for this task"
-              >
-                <span className="font-semibold text-[#123458] text-lg truncate underline hover:text-blue-700">{a.tasks?.title}</span>
-                <span className="text-xs text-[#123458] opacity-80">Team: <span className="font-medium">{teamsMap[a.tasks?.team_id] || a.tasks?.team_id || "Unknown Team"}</span></span>
-                {a.tasks?.due_date && (
-                  <span className="text-xs text-[#123458] opacity-80">Due: {new Date(a.tasks.due_date).toLocaleDateString()}</span>
-                )}
-                {a.tasks?.priority && (
-                  <span className="text-xs text-[#123458] opacity-80">Priority: <span className="font-semibold">{a.tasks.priority}</span></span>
-                )}
-                {a.assigned_at && (
-                  <span className="text-xs text-[#123458] opacity-80">Assigned: {new Date(a.assigned_at).toLocaleString()}</span>
-                )}
-                <span>{getStatusBadge(a.status)}</span>
-              </li>
-            ))}
-          </ul>
+        <h1 className="text-3xl font-bold text-[#123458] mb-6">My Profile</h1>
+        {userProfile && (
+          <div className="bg-white/90 rounded-xl shadow p-5 mb-8 flex flex-col gap-2 border-l-4 border-[#123458]">
+            <span className="font-semibold text-[#123458] text-lg">{userProfile.name}</span>
+            <span className="text-xs text-[#123458]/80">{userProfile.email}</span>
+          </div>
         )}
-        {/* REMOVE assigned tasks section and debug output */}
+        <div className="mb-10">
+          <h2 className="text-xl font-bold text-[#123458] mb-2">Teams You Lead</h2>
+          {leadTeams.length === 0 ? (
+            <div className="text-[#123458] text-base opacity-70">You don't lead any teams yet.</div>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2">
+              {leadTeams.map((team) => (
+                <li key={team.id} className="bg-white/90 rounded-xl shadow p-4 border border-[#D4C9BE] hover:bg-[#F1F5F9] transition cursor-pointer"
+                  onClick={() => router.push(`/team/${team.id}`)}
+                  title="Go to team page"
+                >
+                  <span className="font-semibold text-[#123458] text-lg">{team.name}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="mb-10">
+          <h2 className="text-xl font-bold text-[#123458] mb-2">Teams You're a Member Of</h2>
+          {memberTeams.length === 0 ? (
+            <div className="text-[#123458] text-base opacity-70">You haven't joined any teams as a member yet.</div>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2">
+              {memberTeams.map((team) => (
+                <li key={team.id} className="bg-white/90 rounded-xl shadow p-4 border border-[#D4C9BE] hover:bg-[#F1F5F9] transition cursor-pointer"
+                  onClick={() => router.push(`/team/${team.id}`)}
+                  title="Go to team page"
+                >
+                  <span className="font-semibold text-[#123458] text-lg">{team.name}</span>
+                  <span className="text-xs text-[#123458]/70 block mt-1">Lead: {memberTeamsLeads[team.id] || "Unknown"}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

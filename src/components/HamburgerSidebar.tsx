@@ -7,8 +7,15 @@ import {
   Bars3Icon,
   XMarkIcon,
   HomeIcon,
-  DocumentTextIcon,
+  FolderOpenIcon,
+  ChartBarIcon,
   UsersIcon,
+  DocumentTextIcon,
+  UserCircleIcon,
+  ArrowPathIcon,
+  Cog6ToothIcon,
+  MoonIcon,
+  SunIcon,
   BellIcon,
   CalendarDaysIcon,
   ArrowRightOnRectangleIcon,
@@ -20,6 +27,7 @@ const menuItems = [
   { label: "Tasks", icon: <DocumentTextIcon className="w-6 h-6" />, path: "/profile" },
   { label: "Notifications", icon: <BellIcon className="w-6 h-6" />, path: "/notifications", badge: true },
   { label: "Calendar", icon: <CalendarDaysIcon className="w-6 h-6" />, path: "/calendar" },
+  { label: "Profile", icon: <UserCircleIcon className="w-6 h-6" />, path: "/profile" },
 ];
 
 export default function HamburgerSidebar({ unreadNotifications = 0, activePath = "" }) {
@@ -27,14 +35,7 @@ export default function HamburgerSidebar({ unreadNotifications = 0, activePath =
   const sidebarRef = useRef(null);
   const router = useRouter();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
-  useEffect(() => {
-    if (dark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
+  // Removed dark mode state
 
   // Close sidebar on outside click (mobile)
   useEffect(() => {
@@ -115,6 +116,7 @@ export default function HamburgerSidebar({ unreadNotifications = 0, activePath =
         </ul>
         {/* Theme Toggle & Logout at bottom */}
         <div className="px-5 py-4 border-t border-gray-700 flex flex-col gap-2">
+          {/* Removed dark mode toggle button */}
           <button
             className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-red-600 hover:text-white transition text-base font-semibold mt-2"
             onClick={() => setShowLogoutConfirm(true)}
