@@ -5,8 +5,10 @@ import "react-calendar/dist/Calendar.css";
 
 const Calendar = dynamic(() => import("react-calendar"), { ssr: false });
 
+type Value = Date | Date[] | null;
+
 export default function CalendarPage() {
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState<Value>(new Date());
   const [events, setEvents] = useState<{ date: string; title: string }[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [eventTitle, setEventTitle] = useState("");
@@ -57,7 +59,7 @@ export default function CalendarPage() {
           }}
         />
         <div className="mt-6 text-black text-lg flex items-center gap-4">
-          Selected: <span className="font-semibold">{formatDateDDMMYYYY(date)}</span>
+          Selected: <span className="font-semibold">{formatDateDDMMYYYY(date as Date)}</span>
           <button
             className="ml-2 px-3 py-1 rounded bg-[#123458] text-white hover:bg-[#D4C9BE] hover:text-[#123458] transition text-sm font-semibold"
             onClick={() => setShowForm((v) => !v)}
@@ -93,7 +95,7 @@ export default function CalendarPage() {
           </form>
         )}
         <div className="mt-6 w-full">
-          <h2 className="text-lg font-bold text-black mb-2">Events for {formatDateDDMMYYYY(date)}:</h2>
+          <h2 className="text-lg font-bold text-black mb-2">Events for {formatDateDDMMYYYY(date as Date)}:</h2>
           {eventsForDate.length === 0 ? (
             <div className="text-black opacity-80">No events for this date.</div>
           ) : (
