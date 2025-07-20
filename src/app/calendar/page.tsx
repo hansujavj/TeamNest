@@ -17,7 +17,7 @@ export default function CalendarPage() {
     return `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getFullYear()}`;
   }
 
-  const selectedDateStr = date.toDateString();
+  const selectedDateStr = date ? (Array.isArray(date) ? date[0]?.toDateString() : date.toDateString()) : '';
   const eventsForDate = events.filter((e) => e.date === selectedDateStr);
 
   function handleAddEvent(e: React.FormEvent) {
