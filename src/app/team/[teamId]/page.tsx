@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
-import { UsersIcon, ClipboardDocumentListIcon, SparklesIcon, UserCircleIcon, LinkIcon, PlusIcon } from "@heroicons/react/24/solid";
+import { UsersIcon, ClipboardDocumentListIcon, SparklesIcon, UserCircleIcon, LinkIcon, PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import type { User, Profile, Team, Task, TaskAssignment } from "@/types";
 import { Dialog } from "@headlessui/react";
 
@@ -33,6 +33,12 @@ export default function TeamPage() {
   const [showRemoveUser, setShowRemoveUser] = useState<{ open: boolean; userId: string | null }>({ open: false, userId: null });
   const [showDeleteTask, setShowDeleteTask] = useState<{ open: boolean; taskId: string | null }>({ open: false, taskId: null });
   const [copied, setCopied] = useState(false);
+  // Add state for editing activities, domains, and tasks
+  const [editingActivity, setEditingActivity] = useState<{ id: string; message: string } | null>(null);
+  const [deletingActivity, setDeletingActivity] = useState<string | null>(null);
+  const [editingDomain, setEditingDomain] = useState<{ id: string; name: string } | null>(null);
+  const [deletingDomain, setDeletingDomain] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -174,6 +180,57 @@ export default function TeamPage() {
     toast.success("Task deleted.");
   };
 
+  // Add handlers for activity edit/delete
+  const handleEditActivity = async () => {
+    if (!editingActivity) return;
+    await supabase.from("team_activities").update({ message: editingActivity.message }).eq("id", editingActivity.id);
+    const { data: teamActivities } = await supabase
+      .from("team_activities")
+      .select("*, profiles(name)")
+      .eq("team_id", teamId)
+      .order("created_at", { ascending: false });
+    setActivities(teamActivities || []);
+    setEditingActivity(null);
+  };
+  const handleDeleteActivity = async () => {
+    if (!deletingActivity) return;
+    await supabase.from("team_activities").delete().eq("id", deletingActivity);
+    setActivities((prev) => prev.filter((a) => a.id !== deletingActivity));
+    setDeletingActivity(null);
+  };
+  // Add handlers for domain edit/delete
+  const handleEditDomain = async () => {
+    if (!editingDomain) return;
+    await supabase.from("domains").update({ name: editingDomain.name }).eq("id", editingDomain.id);
+    const { data: domains } = await supabase
+      .from("domains")
+      .select("id, name")
+      .eq("team_id", teamId);
+    setDomains(domains || []);
+    setEditingDomain(null);
+  };
+  const handleDeleteDomain = async () => {
+    if (!deletingDomain) return;
+    await supabase.from("domains").delete().eq("id", deletingDomain);
+    setDomains((prev) => prev.filter((d) => d.id !== deletingDomain));
+    setDeletingDomain(null);
+  };
+  // Add handlers for task edit
+  const handleEditTask = async () => {
+    if (!editingTask) return;
+    await supabase.from("tasks").update({
+      title: editingTask.title,
+      status: editingTask.status,
+      // Add other fields as needed
+    }).eq("id", editingTask.id);
+    const { data: tasks } = await supabase
+      .from("tasks")
+      .select("id, title, team_id, created_by, status, domain_id")
+      .eq("team_id", teamId);
+    setTasks(tasks || []);
+    setEditingTask(null);
+  };
+
   if (loading) return <div className="p-8">Loading...</div>;
   if (!team) return <div className="p-8 text-red-500">Team not found.</div>;
 
@@ -220,6 +277,12 @@ export default function TeamPage() {
                   className={`px-3 py-1 rounded-full border text-xs font-semibold border-[#123458] ${preferredDomainIds.includes(d.id) ? 'bg-[#123458] text-white font-bold' : 'bg-[#D4C9BE] text-[#123458]'}`}
                 >
                   {d.name}
+                  {isLead && (
+                    <span className="ml-2 flex gap-1">
+                      <button onClick={() => setEditingDomain({ id: d.id, name: d.name })}><PencilIcon className="w-4 h-4 text-gray-400 hover:text-blue-500 transition" /></button>
+                      <button onClick={() => setDeletingDomain(d.id)}><TrashIcon className="w-4 h-4 text-gray-400 hover:text-red-500 transition" /></button>
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -291,15 +354,15 @@ export default function TeamPage() {
                   <li key={task.id} className="p-5 bg-white border border-[#D4C9BE] rounded-2xl shadow-md flex flex-col gap-2 hover:shadow-lg hover:scale-[1.01] transition-all">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-bold text-lg text-[#123458]">{task.title}</span>
-                      {taskDomain?.name && (
-                        <span className="ml-2 px-2 py-0.5 rounded-full border text-xs font-semibold bg-[#D4C9BE] text-[#123458] border-[#123458]">{taskDomain.name}</span>
-                      )}
+                      {isLead || isAssignedToMe ? (
+                        <button onClick={() => setEditingTask(task)}><PencilIcon className="w-4 h-4 text-gray-400 hover:text-blue-500 transition" /></button>
+                      ) : null}
                       {isLead && (
                         <button
                           className="ml-auto px-3 py-1 rounded bg-teal-500 text-white text-xs font-bold hover:bg-teal-600 transition"
                           onClick={() => setShowDeleteTask({ open: true, taskId: task.id })}
                         >
-                          Delete
+                          Remove
                         </button>
                       )}
                     </div>
@@ -361,6 +424,12 @@ export default function TeamPage() {
                       <span className="font-bold text-[#123458]">{a.profiles?.name || "User"}</span>
                       <span className="text-xs text-[#123458]/60">{new Date(a.created_at).toLocaleString()}</span>
                       <span className="ml-2">{a.message}</span>
+                      {a.user_id === currentUserId && (
+                        <span className="ml-auto flex gap-1">
+                          <button onClick={() => setEditingActivity({ id: a.id, message: a.message })}><PencilIcon className="w-4 h-4 text-gray-400 hover:text-blue-500 transition" /></button>
+                          <button onClick={() => setDeletingActivity(a.id)}><TrashIcon className="w-4 h-4 text-gray-400 hover:text-red-500 transition" /></button>
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -389,6 +458,91 @@ export default function TeamPage() {
             <div className="flex gap-4 w-full justify-center">
               <button className="px-5 py-2 rounded-lg bg-[#123458] text-white font-semibold hover:bg-[#D4C9BE] hover:text-[#123458] transition" onClick={handleDeleteTask}>Yes</button>
               <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition" onClick={() => setShowDeleteTask({ open: false, taskId: null })}>No</button>
+            </div>
+          </Dialog.Panel>
+        </Dialog>
+      )}
+      {editingActivity && (
+        <Dialog open={!!editingActivity} onClose={() => setEditingActivity(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6 max-w-xs w-full border border-[#D4C9BE]">
+            <Dialog.Title className="text-lg font-bold text-[#123458]">Edit Activity</Dialog.Title>
+            <input
+              type="text"
+              value={editingActivity.message}
+              onChange={e => setEditingActivity({ ...editingActivity, message: e.target.value })}
+              className="w-full px-3 py-2 rounded border border-[#123458] focus:outline-none focus:ring-2 focus:ring-[#123458] text-black"
+              maxLength={120}
+            />
+            <div className="flex gap-4 w-full justify-center">
+              <button className="px-5 py-2 rounded-lg bg-[#123458] text-white font-semibold hover:bg-[#D4C9BE] hover:text-[#123458] transition" onClick={handleEditActivity}>Save</button>
+              <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition" onClick={() => setEditingActivity(null)}>Cancel</button>
+            </div>
+          </Dialog.Panel>
+        </Dialog>
+      )}
+      {deletingActivity && (
+        <Dialog open={!!deletingActivity} onClose={() => setDeletingActivity(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6 max-w-xs w-full border border-[#D4C9BE]">
+            <Dialog.Title className="text-lg font-bold text-[#123458]">Delete this activity?</Dialog.Title>
+            <div className="flex gap-4 w-full justify-center">
+              <button className="px-5 py-2 rounded-lg bg-[#123458] text-white font-semibold hover:bg-[#D4C9BE] hover:text-[#123458] transition" onClick={handleDeleteActivity}>Yes</button>
+              <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition" onClick={() => setDeletingActivity(null)}>No</button>
+            </div>
+          </Dialog.Panel>
+        </Dialog>
+      )}
+      {editingDomain && (
+        <Dialog open={!!editingDomain} onClose={() => setEditingDomain(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6 max-w-xs w-full border border-[#D4C9BE]">
+            <Dialog.Title className="text-lg font-bold text-[#123458]">Edit Domain</Dialog.Title>
+            <input
+              type="text"
+              value={editingDomain.name}
+              onChange={e => setEditingDomain({ ...editingDomain, name: e.target.value })}
+              className="w-full px-3 py-2 rounded border border-[#123458] focus:outline-none focus:ring-2 focus:ring-[#123458] text-black"
+              maxLength={40}
+            />
+            <div className="flex gap-4 w-full justify-center">
+              <button className="px-5 py-2 rounded-lg bg-[#123458] text-white font-semibold hover:bg-[#D4C9BE] hover:text-[#123458] transition" onClick={handleEditDomain}>Save</button>
+              <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition" onClick={() => setEditingDomain(null)}>Cancel</button>
+            </div>
+          </Dialog.Panel>
+        </Dialog>
+      )}
+      {deletingDomain && (
+        <Dialog open={!!deletingDomain} onClose={() => setDeletingDomain(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6 max-w-xs w-full border border-[#D4C9BE]">
+            <Dialog.Title className="text-lg font-bold text-[#123458]">Delete this domain?</Dialog.Title>
+            <div className="flex gap-4 w-full justify-center">
+              <button className="px-5 py-2 rounded-lg bg-[#123458] text-white font-semibold hover:bg-[#D4C9BE] hover:text-[#123458] transition" onClick={handleDeleteDomain}>Yes</button>
+              <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition" onClick={() => setDeletingDomain(null)}>No</button>
+            </div>
+          </Dialog.Panel>
+        </Dialog>
+      )}
+      {editingTask && (
+        <Dialog open={!!editingTask} onClose={() => setEditingTask(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6 max-w-xs w-full border border-[#D4C9BE]">
+            <Dialog.Title className="text-lg font-bold text-[#123458]">Edit Task</Dialog.Title>
+            <input
+              type="text"
+              value={editingTask.title}
+              onChange={e => setEditingTask({ ...editingTask, title: e.target.value })}
+              className="w-full px-3 py-2 rounded border border-[#123458] focus:outline-none focus:ring-2 focus:ring-[#123458] text-black"
+              maxLength={60}
+            />
+            <select
+              value={editingTask.status}
+              onChange={e => setEditingTask({ ...editingTask, status: e.target.value })}
+              className="w-full px-3 py-2 rounded border border-[#123458] focus:outline-none focus:ring-2 focus:ring-[#123458] text-black"
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <div className="flex gap-4 w-full justify-center">
+              <button className="px-5 py-2 rounded-lg bg-[#123458] text-white font-semibold hover:bg-[#D4C9BE] hover:text-[#123458] transition" onClick={handleEditTask}>Save</button>
+              <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition" onClick={() => setEditingTask(null)}>Cancel</button>
             </div>
           </Dialog.Panel>
         </Dialog>

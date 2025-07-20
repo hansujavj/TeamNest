@@ -2,6 +2,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import "react-calendar/dist/Calendar.css";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 const Calendar = dynamic(() => import("react-calendar"), { ssr: false });
 
@@ -13,6 +14,8 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<{ date: string; title: string }[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [eventTitle, setEventTitle] = useState("");
+  const [editingEvent, setEditingEvent] = useState<{ index: number; title: string } | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState<number | null>(null);
 
   function formatDateDDMMYYYY(date: Date) {
     return `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getFullYear()}`;
@@ -106,8 +109,48 @@ export default function CalendarPage() {
           ) : (
             <ul className="space-y-2">
               {eventsForDate.map((e, i) => (
-                <li key={i} className="bg-[#D4C9BE]/70 rounded px-3 py-2 text-black font-medium shadow-sm">
-                  {e.title}
+                <li key={i} className="bg-[#D4C9BE]/70 rounded px-3 py-2 text-black font-medium shadow-sm flex items-center gap-2">
+                  {editingEvent && editingEvent.index === i ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editingEvent.title}
+                        onChange={ev => setEditingEvent({ ...editingEvent, title: ev.target.value })}
+                        className="flex-1 px-2 py-1 rounded border border-[#123458] text-black"
+                        maxLength={60}
+                        autoFocus
+                      />
+                      <button
+                        className="px-2 py-1 rounded bg-[#123458] text-white hover:bg-[#D4C9BE] hover:text-[#123458] transition text-xs font-semibold"
+                        onClick={() => {
+                          setEvents(prev => prev.map((ev, idx) => idx === i ? { ...ev, title: editingEvent.title } : ev));
+                          setEditingEvent(null);
+                        }}
+                      >Save</button>
+                      <button
+                        className="px-2 py-1 rounded bg-gray-200 text-[#123458] hover:bg-gray-300 transition text-xs font-semibold"
+                        onClick={() => setEditingEvent(null)}
+                      >Cancel</button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex-1">{e.title}</span>
+                      <button onClick={() => setEditingEvent({ index: i, title: e.title })}><PencilIcon className="w-4 h-4 text-gray-400 hover:text-blue-500 transition" /></button>
+                      <button onClick={() => setDeletingEvent(i)}><TrashIcon className="w-4 h-4 text-gray-400 hover:text-red-500 transition" /></button>
+                    </>
+                  )}
+                  {deletingEvent === i && (
+                    <div className="absolute left-0 top-0 w-full h-full flex items-center justify-center bg-black/30 z-10">
+                      <div className="bg-white rounded shadow p-4 flex gap-2">
+                        <span>Delete this event?</span>
+                        <button className="px-3 py-1 rounded bg-[#123458] text-white font-semibold hover:bg-[#D4C9BE] hover:text-[#123458] transition" onClick={() => {
+                          setEvents(prev => prev.filter((_, idx) => idx !== i));
+                          setDeletingEvent(null);
+                        }}>Yes</button>
+                        <button className="px-3 py-1 rounded bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition" onClick={() => setDeletingEvent(null)}>No</button>
+                      </div>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

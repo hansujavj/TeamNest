@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { BellIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { BellIcon, CheckCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -61,6 +61,16 @@ export default function NotificationsPage() {
 
   if (loading) return <div className="p-8">Loading...</div>;
 
+  // Add a handler for dismissing a notification
+  const handleDismissNotification = async (id: string) => {
+    await supabase
+      .from("notifications")
+      .update({ read_status: true })
+      .eq("id", id);
+    setNotificationsWithTeams((prev) => prev.filter((n) => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F1F5F9] to-[#E0E7EF] pb-20 px-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-2xl bg-white/90 border border-[#D4C9BE] rounded-2xl shadow-lg p-8 flex flex-col gap-8 mt-10">
@@ -83,6 +93,14 @@ export default function NotificationsPage() {
                 style={{ animationDelay: `${idx * 40}ms`, cursor: n.team_id ? 'pointer' : 'default' }}
                 onClick={() => n.team_id && router.push(`/team/${n.team_id}`)}
               >
+                <button
+                  className="absolute inset-y-0 right-3 flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 hover:bg-red-100 z-10 shadow"
+                  style={{ top: '50%', transform: 'translateY(-50%)' }}
+                  onClick={e => { e.stopPropagation(); handleDismissNotification(n.id); }}
+                  aria-label="Dismiss notification"
+                >
+                  <XMarkIcon className="w-3.5 h-3.5 text-gray-400 hover:text-red-500 transition" />
+                </button>
                 <span className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${n.read_status ? 'bg-[#D4C9BE] text-[#123458]' : 'bg-[#123458] text-white'} text-xl`}>
                   <BellIcon className="w-6 h-6" />
                 </span>

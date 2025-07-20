@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { LightBulbIcon } from "@heroicons/react/24/outline";
+import { LightBulbIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import type { User } from "@/types";
 
 export default function NotificationBell() {
@@ -50,6 +50,16 @@ export default function NotificationBell() {
     setDropdownOpen(false);
   };
 
+  // Add a handler for dismissing a notification
+  const handleDismissNotification = async (id: string) => {
+    await supabase
+      .from("notifications")
+      .update({ read_status: true })
+      .eq("id", id);
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+  };
+
   if (!user) return null;
 
   return (
@@ -78,9 +88,16 @@ export default function NotificationBell() {
               {notifications.slice(0, 8).map((n) => (
                 <li
                   key={n.id}
-                  className={`px-4 py-3 text-sm cursor-pointer hover:bg-slate-100 transition flex flex-col ${n.read_status ? "text-slate-500" : "text-slate-900 font-semibold bg-blue-50"}`}
+                  className={`px-4 py-3 text-sm cursor-pointer hover:bg-slate-100 transition flex flex-col relative ${n.read_status ? "text-slate-500" : "text-slate-900 font-semibold bg-blue-50"}`}
                   onClick={() => handleNotificationClick(n.id)}
                 >
+                  <button
+                    className="absolute top-2 right-2 p-1 rounded hover:bg-red-100 z-10"
+                    onClick={e => { e.stopPropagation(); handleDismissNotification(n.id); }}
+                    aria-label="Dismiss notification"
+                  >
+                    <XMarkIcon className="w-4 h-4 text-gray-400 hover:text-red-500 transition" />
+                  </button>
                   <span className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${n.read_status ? 'bg-slate-200 dark:bg-gray-700' : 'bg-blue-500 text-white dark:bg-blue-600'} text-xl`}> <LightBulbIcon className="w-6 h-6" /> </span>
                   <span>{n.content}</span>
                   <span className="text-xs text-slate-400 mt-1">{new Date(n.timestamp).toLocaleString()}</span>
