@@ -8,7 +8,7 @@ import type { User } from "@/types";
 export default function NotificationBell() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [notifications, setNotifications] = useState<{ id: string; read_status: boolean }[]>([]);
+  const [notifications, setNotifications] = useState<{ id: string; read_status: boolean; content: string; timestamp: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -20,10 +20,10 @@ export default function NotificationBell() {
       if (user) {
         const { data } = await supabase
           .from("notifications")
-          .select("id, read_status")
+          .select("id, read_status, content, timestamp")
           .eq("user_id", user.id)
           .order("timestamp", { ascending: false });
-        setNotifications((data || []) as { id: string; read_status: boolean }[]);
+        setNotifications((data || []) as { id: string; read_status: boolean; content: string; timestamp: string }[]);
         setUnreadCount(((data || []) as { read_status: boolean }[]).filter((n) => !n.read_status).length);
       }
     };
