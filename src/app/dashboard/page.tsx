@@ -236,7 +236,7 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center gap-3 mb-4">
             <UsersIcon className="w-7 h-7 text-[#123458]" />
-            <h2 className="text-2xl font-extrabold tracking-tight text-[#123458]">Teams Joined as Member</h2>
+            <h2 className="text-2xl font-extrabold tracking-tight text-[#123458]">Teams You&apos;re a Member Of</h2>
           </div>
           {memberTeams.length === 0 ? (
             <div className="text-[#123458] text-lg font-medium opacity-70">You haven&apos;t joined any teams as a member yet.</div>

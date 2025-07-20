@@ -99,7 +99,7 @@ export default function ProfilePage() {
           )}
         </div>
         <div className="mb-10">
-          <h2 className="text-xl font-bold text-[#123458] mb-2">Teams You're a Member Of</h2>
+          <h2 className="text-xl font-bold text-[#123458] mb-2">Teams You&apos;re a Member Of</h2>
           {memberTeams.length === 0 ? (
             <div className="text-[#123458] text-base opacity-70">You haven't joined any teams as a member yet.</div>
           ) : (
