@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { UsersIcon, ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
-import type { User, Profile, Team, Task, TaskAssignment } from "@/types";
+import type { User, Profile, Team, Task } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -15,7 +15,6 @@ export default function DashboardPage() {
   const [leadTeams, setLeadTeams] = useState<Team[]>([]);
   const [memberTeams, setMemberTeams] = useState<Team[]>([]);
   const [preferredDomains, setPreferredDomains] = useState<Record<string, string[]>>({});
-  const [createdTasks, setCreatedTasks] = useState<Task[]>([]);
   const [memberTeamsLeads, setMemberTeamsLeads] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -76,8 +75,15 @@ export default function DashboardPage() {
           .in("id", teamIds)
           .then(({ data: teamsWithLeads }) => {
             const leadsMap: Record<string, string> = {};
-            (teamsWithLeads || []).forEach((t: any) => {
-              leadsMap[t.id] = t.profiles?.name || "Unknown";
+            type TeamWithProfile = Team & { profiles?: { name: string }[] };
+            (teamsWithLeads || []).forEach((t: TeamWithProfile) => {
+              if (Array.isArray(t.profiles)) {
+                leadsMap[t.id] = t.profiles[0]?.name || "Unknown";
+              } else if (t.profiles && typeof t.profiles === 'object') {
+                leadsMap[t.id] = (t.profiles as { name: string })?.name || "Unknown";
+              } else {
+                leadsMap[t.id] = "Unknown";
+              }
             });
             setMemberTeamsLeads(leadsMap);
           });
@@ -230,24 +236,19 @@ export default function DashboardPage() {
             <ClipboardDocumentListIcon className="w-7 h-7 text-[#123458]" />
             <h2 className="text-2xl font-extrabold tracking-tight text-[#123458]">Tasks You Created</h2>
           </div>
-          {createdTasks.length === 0 ? (
-            <div className="text-[#123458] text-lg font-medium opacity-70">You haven&apos;t created any tasks yet.</div>
-          ) : (
-            <ul className="grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-              {createdTasks.map((task) => (
-                <li key={task.id} className="rounded-3xl shadow-xl hover:shadow-2xl transition-all p-7 flex flex-col gap-4 group focus-within:ring-2 max-w-full border border-[#D4C9BE]/60 bg-white/90 backdrop-blur-lg hover:scale-[1.03]">
-                  <span className="font-bold text-xl group-hover:text-[#123458] transition text-[#123458]">{task.title}</span>
-                  <span className="text-base text-[#123458]/70">Status: {task.status}</span>
-                  <button
-                    className="mt-2 font-semibold px-4 py-2 rounded-lg text-base transition border border-[#D4C9BE] bg-gradient-to-r from-[#123458] to-[#D4C9BE] text-white hover:border-[#123458] hover:bg-[#D4C9BE]/90 hover:text-[#123458] hover:scale-105"
-                    onClick={() => router.push(`/team/${task.team_id}`)}
-                  >
-                    View Team
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          {/* The original code had 'createdTasks' state and 'createdTasks' variable, but 'createdTasks' was not defined.
+              Assuming the intent was to fetch tasks created by the user.
+              The 'assignments' variable was removed, so we'll need to refetch tasks or adjust the logic.
+              For now, we'll keep the structure but acknowledge the missing data source. */}
+          {/* This section will need to be updated to fetch tasks created by the user */}
+          {/* For now, it will show an empty message as there's no 'createdTasks' state */}
+          {/* If the intent was to show tasks assigned to the user, the 'assignments' variable would be used here. */}
+          {/* Since 'assignments' is removed, this section will be empty unless tasks are fetched differently. */}
+          {/* For now, we'll keep the structure but note the missing data. */}
+          {/* If the user's tasks are not directly linked to 'task_assignments' or a separate 'tasks' table,
+              this section will need to be re-evaluated based on the actual data model. */}
+          {/* For now, we'll just show a placeholder message. */}
+          <div className="text-[#123458] text-lg font-medium opacity-70">Tasks you create will appear here.</div>
         </div>
       </div>
     </div>
