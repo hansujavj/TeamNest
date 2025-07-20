@@ -3,9 +3,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -37,6 +39,13 @@ export default function LoginPage() {
       >
         <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-2">Sign In</h1>
         <p className="text-center text-gray-500 dark:text-gray-400 mb-6">Welcome back! Please login to your account.</p>
+        {(searchParams.get("confirm") === "1" || searchParams.get("confirmed") === "1") && (
+          <div className="mb-4 text-green-700 text-center font-semibold bg-green-50 border border-green-200 rounded p-2">
+            {searchParams.get("confirmed") === "1"
+              ? "Your email has been confirmed! You can now log in."
+              : "Registration successful! Please check your email to confirm your account before logging in."}
+          </div>
+        )}
         <input
           type="email"
           placeholder="Email"

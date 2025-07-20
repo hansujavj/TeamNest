@@ -18,7 +18,7 @@ import {
 const menuItems = [
   { label: "Dashboard", icon: <HomeIcon className="w-6 h-6" />, path: "/dashboard" },
   { label: "Teams", icon: <UsersIcon className="w-6 h-6" />, path: "/team" },
-  { label: "Tasks", icon: <DocumentTextIcon className="w-6 h-6" />, path: "/profile" },
+  { label: "Tasks", icon: <DocumentTextIcon className="w-6 h-6" />, path: "/tasks" },
   { label: "Notifications", icon: <BellIcon className="w-6 h-6" />, path: "/notifications", badge: true },
   { label: "Calendar", icon: <CalendarDaysIcon className="w-6 h-6" />, path: "/calendar" },
   { label: "Profile", icon: <UserCircleIcon className="w-6 h-6" />, path: "/profile" },
@@ -112,7 +112,7 @@ export default function HamburgerSidebar({ unreadNotifications = 0, activePath =
         <div className="px-5 py-4 border-t border-gray-700 flex flex-col gap-2">
           {/* Removed dark mode toggle button */}
           <button
-            className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-red-600 hover:text-white transition text-base font-semibold mt-2"
+            className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-red-600 hover:text-white transition text-base font-semibold mt-2 w-full"
             onClick={() => setShowLogoutConfirm(true)}
             aria-label="Logout"
           >
@@ -122,18 +122,18 @@ export default function HamburgerSidebar({ unreadNotifications = 0, activePath =
         </div>
         {/* Logout Confirmation Modal */}
         {showLogoutConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-2">
             <div className="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6 max-w-xs w-full border border-[#D4C9BE]">
               <div className="text-lg font-bold text-[#123458]">Are you sure you want to log out?</div>
-              <div className="flex gap-4 w-full justify-center">
+              <div className="flex flex-col sm:flex-row gap-2 w-full justify-center">
                 <button
-                  className="px-5 py-2 rounded-lg bg-[#123458] text-white font-semibold hover:bg-[#D4C9BE] hover:text-[#123458] transition"
+                  className="px-5 py-2 rounded-lg bg-[#123458] text-white font-semibold hover:bg-[#D4C9BE] hover:text-[#123458] transition w-full sm:w-auto"
                   onClick={handleLogout}
                 >
                   Yes
                 </button>
                 <button
-                  className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition"
+                  className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition w-full sm:w-auto"
                   onClick={() => setShowLogoutConfirm(false)}
                 >
                   No

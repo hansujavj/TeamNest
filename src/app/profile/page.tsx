@@ -63,8 +63,6 @@ export default function ProfilePage() {
     fetchProfileAndTeams();
   }, [router]);
 
-  if (loading) return <div className="p-8">Loading...</div>;
-
   const handleSaveName = async () => {
     if (!newName.trim() || !userProfile) return;
     await supabase.from("profiles").update({ name: newName.trim() }).eq("id", userProfile.id);
@@ -78,25 +76,27 @@ export default function ProfilePage() {
         <h1 className="text-3xl font-bold text-[#123458] mb-6">My Profile</h1>
         {userProfile && (
           <div className="bg-white/90 rounded-xl shadow p-5 mb-8 flex flex-col gap-2 border-l-4 border-[#123458]">
-            <span className="font-semibold text-[#123458] text-lg flex items-center gap-2">
+            <span className="font-semibold text-[#123458] text-lg flex items-center gap-2 flex-wrap w-full">
               {editingName ? (
                 <>
                   <input
                     type="text"
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
-                    className="px-2 py-1 rounded border border-[#123458] text-black"
+                    className="px-2 py-1 rounded border border-[#123458] text-black w-full sm:w-auto"
                     maxLength={40}
                     autoFocus
                   />
-                  <button
-                    className="px-3 py-1 rounded bg-[#123458] text-white hover:bg-[#D4C9BE] hover:text-[#123458] transition text-xs font-semibold"
-                    onClick={handleSaveName}
-                  >Save</button>
-                  <button
-                    className="px-3 py-1 rounded bg-gray-200 text-[#123458] hover:bg-gray-300 transition text-xs font-semibold"
-                    onClick={() => { setEditingName(false); setNewName(userProfile.name); }}
-                  >Cancel</button>
+                  <div className="flex flex-col sm:flex-row gap-2 w-full">
+                    <button
+                      className="px-3 py-1 rounded bg-[#123458] text-white hover:bg-[#D4C9BE] hover:text-[#123458] transition text-xs font-semibold w-full sm:w-auto"
+                      onClick={handleSaveName}
+                    >Save</button>
+                    <button
+                      className="px-3 py-1 rounded bg-gray-200 text-[#123458] hover:bg-gray-300 transition text-xs font-semibold w-full sm:w-auto"
+                      onClick={() => { setEditingName(false); setNewName(userProfile.name); }}
+                    >Cancel</button>
+                  </div>
                 </>
               ) : (
                 <>

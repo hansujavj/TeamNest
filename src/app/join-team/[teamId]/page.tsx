@@ -53,7 +53,6 @@ export default function JoinTeamPage() {
     router.push(`/team/${teamId}`);
   };
 
-  if (loading) return <div className="p-8">Loading...</div>;
   if (!team) return <div className="p-8 text-red-500">Team not found.</div>;
 
   return (

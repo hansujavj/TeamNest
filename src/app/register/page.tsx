@@ -42,7 +42,7 @@ export default function RegisterPage() {
       }
     }
     setLoading(false);
-    router.push("/dashboard");
+    router.push("/login?confirm=1"); // Redirect to login with confirm param
   };
 
   return (

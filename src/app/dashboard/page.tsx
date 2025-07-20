@@ -123,8 +123,6 @@ export default function DashboardPage() {
   // Determine display name for welcome
   const displayName = profile?.name || (user?.email ? user.email.split('@')[0] : '');
 
-  if (loading) return <div className="p-8">Loading...</div>;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F1F5F9] to-[#E0E7EF] pb-20 overflow-x-hidden flex flex-col items-center justify-center">
       <div className="max-w-5xl w-full px-4 pt-10 pb-6 flex flex-col items-center text-center">
@@ -134,7 +132,7 @@ export default function DashboardPage() {
             <p className="text-[#123458] text-base">Your team workspace at a glance.</p>
           </div>
           <button
-            className="bg-[#123458] hover:bg-[#D4C9BE] hover:text-[#123458] text-white font-semibold px-6 py-3 rounded-xl shadow-md transition text-base focus:outline-none focus:ring-2 mx-auto"
+            className="bg-[#123458] hover:bg-[#D4C9BE] hover:text-[#123458] text-white font-semibold px-6 py-3 rounded-xl shadow-md transition text-base focus:outline-none focus:ring-2 mx-auto w-full sm:w-auto"
             onClick={() => {
               toast("Create a new team");
               router.push("/team/create");
@@ -149,11 +147,11 @@ export default function DashboardPage() {
             ref={joinInputRef}
             type="text"
             placeholder="Paste team join link or enter team ID..."
-            className="flex-1 px-4 py-2 rounded-lg border border-[#D4C9BE] bg-white text-[#123458] shadow-sm focus:outline-none focus:ring-2 max-w-md"
+            className="flex-1 px-4 py-2 rounded-lg border border-[#D4C9BE] bg-white text-[#123458] shadow-sm focus:outline-none focus:ring-2 max-w-md w-full"
           />
           <button
             type="submit"
-            className="bg-[#D4C9BE] text-[#123458] font-semibold px-5 py-2 rounded-lg shadow-sm transition hover:bg-[#123458] hover:text-[#D4C9BE]"
+            className="bg-[#D4C9BE] text-[#123458] font-semibold px-5 py-2 rounded-lg shadow-sm transition hover:bg-[#123458] hover:text-[#D4C9BE] w-full sm:w-auto"
           >
             Join Team
           </button>
@@ -227,28 +225,6 @@ export default function DashboardPage() {
               ))}
             </ul>
           )}
-        </div>
-      </div>
-      {/* Tasks Created By You */}
-      <div className="w-full max-w-6xl mx-auto px-4 space-y-12 pt-8">
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <ClipboardDocumentListIcon className="w-7 h-7 text-[#123458]" />
-            <h2 className="text-2xl font-extrabold tracking-tight text-[#123458]">Tasks You Created</h2>
-          </div>
-          {/* The original code had 'createdTasks' state and 'createdTasks' variable, but 'createdTasks' was not defined.
-              Assuming the intent was to fetch tasks created by the user.
-              The 'assignments' variable was removed, so we'll need to refetch tasks or adjust the logic.
-              For now, we'll keep the structure but acknowledge the missing data source. */}
-          {/* This section will need to be updated to fetch tasks created by the user */}
-          {/* For now, it will show an empty message as there's no 'createdTasks' state */}
-          {/* If the intent was to show tasks assigned to the user, the 'assignments' variable would be used here. */}
-          {/* Since 'assignments' is removed, this section will be empty unless tasks are fetched differently. */}
-          {/* For now, we'll keep the structure but note the missing data. */}
-          {/* If the user's tasks are not directly linked to 'task_assignments' or a separate 'tasks' table,
-              this section will need to be re-evaluated based on the actual data model. */}
-          {/* For now, we'll just show a placeholder message. */}
-          <div className="text-[#123458] text-lg font-medium opacity-70">Tasks you create will appear here.</div>
         </div>
       </div>
     </div>

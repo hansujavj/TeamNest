@@ -122,7 +122,6 @@ export default function CreateTaskPage() {
     router.push(`/team/${teamId}`);
   };
 
-  if (loading) return <div className="p-8">Loading...</div>;
   if (error) return <div className="p-8 text-red-500">{error}</div>;
 
   return (

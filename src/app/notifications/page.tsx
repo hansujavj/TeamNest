@@ -59,8 +59,6 @@ export default function NotificationsPage() {
     fetchData();
   }, [router]);
 
-  if (loading) return <div className="p-8">Loading...</div>;
-
   // Add a handler for dismissing a notification
   const handleDismissNotification = async (id: string) => {
     await supabase
@@ -89,17 +87,17 @@ export default function NotificationsPage() {
             {notificationsWithTeams.map((n, idx) => (
               <li
                 key={n.id}
-                className={`relative p-5 rounded-2xl shadow transition-all border flex gap-4 items-center ${n.read_status ? 'bg-white border-[#D4C9BE]/40' : 'bg-[#D4C9BE]/30 border-[#D4C9BE] animate-fade-in'}`}
+                className={`relative p-5 pr-10 rounded-2xl shadow transition-all border flex gap-4 items-center ${n.read_status ? 'bg-white border-[#D4C9BE]/40' : 'bg-[#D4C9BE]/30 border-[#D4C9BE] animate-fade-in'} w-full`}
                 style={{ animationDelay: `${idx * 40}ms`, cursor: n.team_id ? 'pointer' : 'default' }}
                 onClick={() => n.team_id && router.push(`/team/${n.team_id}`)}
               >
                 <button
-                  className="absolute inset-y-0 right-3 flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 hover:bg-red-100 z-10 shadow"
+                  className="absolute inset-y-0 right-3 flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 hover:bg-red-100 z-10 shadow"
                   style={{ top: '50%', transform: 'translateY(-50%)' }}
                   onClick={e => { e.stopPropagation(); handleDismissNotification(n.id); }}
                   aria-label="Dismiss notification"
                 >
-                  <XMarkIcon className="w-3.5 h-3.5 text-gray-400 hover:text-red-500 transition" />
+                  <XMarkIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-400 hover:text-red-500 transition" />
                 </button>
                 <span className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${n.read_status ? 'bg-[#D4C9BE] text-[#123458]' : 'bg-[#123458] text-white'} text-xl`}>
                   <BellIcon className="w-6 h-6" />

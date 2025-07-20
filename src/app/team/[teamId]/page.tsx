@@ -244,7 +244,6 @@ export default function TeamPage() {
     router.push("/dashboard");
   };
 
-  if (loading) return <div className="p-8">Loading...</div>;
   if (!team) return <div className="p-8 text-red-500">Team not found.</div>;
 
   const joinLink = `${typeof window !== "undefined" ? window.location.origin : ""}/join-team/${teamId}`;
@@ -252,11 +251,11 @@ export default function TeamPage() {
   const currentUserId = user?.id;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F1F5F9] to-[#E0E7EF] pb-20 px-2 md:px-6 flex flex-col items-center justify-center">
-      <div className="w-full max-w-7xl mx-auto space-y-10 pt-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#F1F5F9] to-[#E0E7EF] pb-20 px-2 sm:px-4 flex flex-col items-center justify-center">
+      <div className="w-full max-w-7xl bg-white/90 mx-auto space-y-10 pt-10 px-2 sm:px-6 rounded-2xl shadow-lg">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-y-4 sm:gap-8">
           {/* Team Info */}
-          <div className="col-span-1 rounded-2xl shadow-lg bg-white/90 border border-[#D4C9BE] p-7 flex flex-col gap-3">
+          <div className="col-span-1 rounded-2xl shadow-lg bg-white/90 border border-[#D4C9BE] p-4 sm:p-7 flex flex-col gap-3 w-full">
             <div className="flex items-center gap-2 text-[#123458] text-lg font-bold mb-2"><SparklesIcon className="w-6 h-6"/> Team Info</div>
             <div className="text-3xl font-extrabold text-[#123458] mb-2 tracking-tight">{team.name}</div>
             <div className="flex items-center gap-2 text-xs text-[#123458] mb-1"><LinkIcon className="w-4 h-4"/> Join Link:</div>
@@ -289,7 +288,7 @@ export default function TeamPage() {
             )}
           </div>
           {/* Domains */}
-          <div className="col-span-1 rounded-2xl shadow-lg bg-white/90 border border-[#D4C9BE] p-7 flex flex-col gap-3">
+          <div className="col-span-1 rounded-2xl shadow-lg bg-white/90 border border-[#D4C9BE] p-4 sm:p-7 flex flex-col gap-3 w-full">
             <div className="flex items-center gap-2 text-[#123458] text-lg font-bold mb-2"><ClipboardDocumentListIcon className="w-6 h-6"/> Domains</div>
             <ul className="flex flex-col gap-2 mb-2">
               {domains.map((d) => (
@@ -319,7 +318,7 @@ export default function TeamPage() {
             </div>
           </div>
           {/* Members */}
-          <div className="col-span-1 rounded-2xl shadow-lg bg-white/90 border border-[#D4C9BE] p-7 flex flex-col gap-3">
+          <div className="col-span-1 rounded-2xl shadow-lg bg-white/90 border border-[#D4C9BE] p-4 sm:p-7 flex flex-col gap-3 w-full">
             <div className="flex items-center gap-2 text-[#123458] text-lg font-bold mb-2"><UsersIcon className="w-6 h-6"/> Members</div>
             <ul className="space-y-3">
               {[
@@ -329,20 +328,20 @@ export default function TeamPage() {
                 const memberProfile = (m.profiles as any);
                 const isCurrentUser = m.user_id === currentUserId;
                 return (
-                  <li key={m.user_id} className="flex items-center gap-3">
+                  <li key={m.user_id} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full">
                     <span className="w-9 h-9 rounded-full bg-[#D4C9BE] flex items-center justify-center text-[#123458] font-bold text-lg border-2 border-[#123458] shadow">{memberProfile?.name?.[0]?.toUpperCase() || "U"}</span>
-                    <div>
+                    <div className="flex-1">
                       <div className="font-semibold text-[#123458] text-base">
                         {memberProfile?.name} {isCurrentUser && <span className="text-xs text-[#123458]/70 font-bold">(You)</span>}
                       </div>
                       <div className="text-xs text-[#123458]/70 font-bold">
                         {m.user_id === team?.created_by ? "Lead" : "Member"}
                       </div>
+                      <span className="text-xs text-[#123458]/70 block">{memberProfile?.email}</span>
                     </div>
-                    <span className="ml-auto text-xs text-[#123458]/70">{memberProfile?.email}</span>
                     {isLead && m.user_id !== team?.created_by && (
                       <button
-                        className="ml-2 px-3 py-1 rounded bg-teal-500 text-white text-xs font-bold hover:bg-teal-600 transition"
+                        className="w-full sm:w-auto mt-2 sm:mt-0 px-3 py-1 rounded bg-teal-500 text-white text-xs font-bold hover:bg-teal-600 transition"
                         onClick={() => setShowRemoveUser({ open: true, userId: m.user_id })}
                       >
                         Remove
@@ -355,9 +354,9 @@ export default function TeamPage() {
           </div>
         </div>
         {/* Tasks & Activity */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-y-4 sm:gap-8">
           {/* Tasks */}
-          <div className="col-span-2 rounded-2xl shadow-lg bg-white/90 border border-[#D4C9BE] p-7 flex flex-col gap-4">
+          <div className="col-span-1 sm:col-span-2 rounded-2xl shadow-lg bg-white/90 border border-[#D4C9BE] p-4 sm:p-7 flex flex-col gap-4 w-full">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-[#123458] text-lg font-bold"><ClipboardDocumentListIcon className="w-6 h-6"/> Tasks</div>
               {isLead && (
@@ -415,21 +414,21 @@ export default function TeamPage() {
             </ul>
           </div>
           {/* Team Activity */}
-          <div className="col-span-1 rounded-2xl shadow-lg bg-white/90 border border-[#D4C9BE] p-7 flex flex-col gap-4">
+          <div className="col-span-1 rounded-2xl shadow-lg bg-white/90 border border-[#D4C9BE] p-4 sm:p-7 flex flex-col gap-4 w-full max-w-xs sm:max-w-full min-w-0 px-2">
             <div className="flex items-center gap-2 text-[#123458] text-lg font-bold mb-2"><SparklesIcon className="w-6 h-6"/> Team Activity</div>
-            <form onSubmit={handleAddActivity} className="flex gap-2 mb-4">
+            <form onSubmit={handleAddActivity} className="flex flex-col sm:flex-row gap-2 mb-4 w-full">
               <input
                 type="text"
                 value={activityInput}
                 onChange={e => setActivityInput(e.target.value)}
                 placeholder="Add an activity..."
-                className="flex-1 px-3 py-2 rounded-lg border border-[#D4C9BE] bg-white text-[#123458] focus:outline-none focus:ring-2 focus:ring-[#123458]"
+                className="flex-1 px-3 py-2 rounded-lg border border-[#D4C9BE] bg-white text-[#123458] focus:outline-none focus:ring-2 focus:ring-[#123458] w-full min-w-0"
                 maxLength={120}
                 disabled={activityLoading}
               />
               <button
                 type="submit"
-                className="bg-[#123458] hover:bg-[#D4C9BE] hover:text-[#123458] text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-1 disabled:opacity-60"
+                className="bg-[#123458] hover:bg-[#D4C9BE] hover:text-[#123458] text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-1 disabled:opacity-60 w-full sm:w-auto mt-2 sm:mt-0"
                 disabled={activityLoading || !activityInput.trim()}
               >
                 <PlusIcon className="w-5 h-5" /> Add
@@ -441,12 +440,12 @@ export default function TeamPage() {
               ) : (
                 <ul className="space-y-3">
                   {activities.map((a) => (
-                    <li key={a.id} className="flex items-center gap-3 border-b border-[#D4C9BE]/40 pb-2 last:border-b-0">
+                    <li key={a.id} className="flex flex-wrap items-center gap-1 border-b border-[#D4C9BE]/40 pb-2 last:border-b-0 min-w-0">
                       <span className="font-bold text-[#123458]">{a.profiles?.name || "User"}</span>
                       <span className="text-xs text-[#123458]/60">{new Date(a.created_at).toLocaleString()}</span>
-                      <span className="ml-2">{a.message}</span>
+                      <span className="ml-2 break-all overflow-wrap-anywhere flex-1 min-w-0 w-full">{a.message}</span>
                       {a.user_id === currentUserId && (
-                        <span className="ml-auto flex gap-1">
+                        <span className="flex flex-wrap gap-1 min-w-0">
                           <button onClick={() => setEditingActivity({ id: a.id, message: a.message })}><PencilIcon className="w-4 h-4 text-gray-400 hover:text-blue-500 transition" /></button>
                           <button onClick={() => setDeletingActivity(a.id)}><TrashIcon className="w-4 h-4 text-gray-400 hover:text-red-500 transition" /></button>
                         </span>
@@ -569,13 +568,13 @@ export default function TeamPage() {
         </Dialog>
       )}
       {showDeleteTeam && (
-        <Dialog open={showDeleteTeam} onClose={() => setShowDeleteTeam(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6 max-w-xs w-full border border-[#D4C9BE]">
+        <Dialog open={showDeleteTeam} onClose={() => setShowDeleteTeam(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-2">
+          <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 flex flex-col items-center gap-6 w-full max-w-xs border border-[#D4C9BE]">
             <Dialog.Title className="text-lg font-bold text-[#123458]">Delete this team?</Dialog.Title>
-            <div className="text-[#123458]/80 mb-4">This action cannot be undone. All team data will be lost.</div>
-            <div className="flex gap-4 w-full justify-center">
-              <button className="px-5 py-2 rounded-lg bg-gray-500 text-white font-semibold hover:bg-gray-700 transition" onClick={handleDeleteTeam}>Yes, Delete</button>
-              <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition" onClick={() => setShowDeleteTeam(false)}>Cancel</button>
+            <div className="text-[#123458]/80 mb-4 text-center">This action cannot be undone. All team data will be lost.</div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
+              <button className="px-5 py-2 rounded-lg bg-gray-500 text-white font-semibold hover:bg-gray-700 transition w-full sm:w-auto" onClick={handleDeleteTeam}>Yes, Delete</button>
+              <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition w-full sm:w-auto" onClick={() => setShowDeleteTeam(false)}>Cancel</button>
             </div>
           </Dialog.Panel>
         </Dialog>

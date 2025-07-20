@@ -54,8 +54,6 @@ export default function TeamsPage() {
     getUserAndTeams();
   }, [router]);
 
-  if (loading) return <div className="p-8">Loading...</div>;
-
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-[#F1F5F9] to-[#E0E7EF] pb-20 overflow-x-hidden">
       <div className="relative z-10 max-w-6xl mx-auto px-4 space-y-12 pt-16">
