@@ -26,7 +26,7 @@ const menuItems = [
 
 export default function HamburgerSidebar({ unreadNotifications = 0, activePath = "" }) {
   const [open, setOpen] = useState(false);
-  const sidebarRef = useRef(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   // Removed dark mode state
