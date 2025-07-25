@@ -27,6 +27,7 @@ export interface Task {
   priority?: string;
   created_by?: string;
   status?: string;
+  description?: string;
 }
 
 // TaskAssignment as stored in the 'task_assignments' table
@@ -38,5 +39,6 @@ export interface TaskAssignment {
   tasks?: Task;
   teams?: Team;
   assigned_at?: string;
+  profiles?: { name: string; email?: string };
   // Optionally, add more fields as needed
 } 

@@ -32,10 +32,10 @@ export default function DashboardPage() {
         .single();
       setProfile(profileData);
       // Fetch all assigned tasks for this user (across all teams)
-      const { data: assignments } = await supabase
-        .from("task_assignments")
-        .select("*, tasks(id, title, team_id, due_date, priority), teams(name)")
-        .eq("user_id", user.id);
+      // const { data: assignments } = await supabase
+      //   .from("task_assignments")
+      //   .select("*, tasks(id, title, team_id, due_date, priority), teams(name)")
+      //   .eq("user_id", user.id);
       // Remove teamsMap and tasksWithTeam logic. If you need to show assigned tasks, use assignments as TaskAssignment[] and display a.tasks directly.
       // For mapping, ensure the result matches Task type: { id, title, team_id, due_date, priority, created_by, status }
       // Remove teamName and teamId properties from mapped objects if not in Task type.

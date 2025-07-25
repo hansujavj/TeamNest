@@ -2,12 +2,13 @@
 import HamburgerSidebar from "@/components/HamburgerSidebar";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import type { User } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function HamburgerSidebarWrapper() {
   const pathname = usePathname();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     // Initial user fetch

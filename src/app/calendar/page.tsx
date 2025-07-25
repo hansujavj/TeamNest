@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import type { User } from "@/types";
 import dynamic from "next/dynamic";
 import "react-calendar/dist/Calendar.css";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
@@ -18,7 +19,7 @@ export default function CalendarPage() {
   const [eventTitle, setEventTitle] = useState("");
   const [editingEvent, setEditingEvent] = useState<{ index: number; title: string } | null>(null);
   const [deletingEvent, setDeletingEvent] = useState<number | null>(null);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
 

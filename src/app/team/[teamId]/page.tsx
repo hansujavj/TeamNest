@@ -24,7 +24,8 @@ export default function TeamPage() {
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
   const [isLead, setIsLead] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
-  const [activities, setActivities] = useState<{ [key: string]: unknown }[]>([]);
+  type Activity = { id: string; profiles?: { name?: string }; created_at: string; message: string; user_id?: string };
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [activityInput, setActivityInput] = useState("");
   const [activityLoading, setActivityLoading] = useState(false);
   const [preferredDomainIds, setPreferredDomainIds] = useState<string[]>([]);
@@ -69,7 +70,7 @@ export default function TeamPage() {
       setDomains((domains || []) as { id: string; name: string }[]);
       const { data: tasks, error: tasksError } = await supabase
         .from("tasks")
-        .select("id, title, team_id, created_by, status, domain_id")
+        .select("*")
         .eq("team_id", teamId);
       if (tasksError) console.error("Supabase error fetching tasks:", tasksError);
       console.log("Fetched tasks for team", teamId, tasks);
@@ -382,7 +383,7 @@ export default function TeamPage() {
                         </button>
                       )}
                     </div>
-                    <div className="text-sm text-[#123458]/80 mb-1">{task.description}</div>
+                    <div className="text-sm text-[#123458]/80 mb-1">{task.description ? task.description : 'No description'}</div>
                     {assignment && (
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs mt-2">
                         <span className="flex items-center gap-1 text-[#123458]">
@@ -436,7 +437,7 @@ export default function TeamPage() {
               ) : (
                 <ul className="space-y-3">
                   {activities.map((a) => (
-                    <li key={a.id} className="flex flex-wrap items-center gap-1 border-b border-[#D4C9BE]/40 pb-2 last:border-b-0 min-w-0">
+                    <li key={String(a.id)} className="flex flex-wrap items-center gap-1 border-b border-[#D4C9BE]/40 pb-2 last:border-b-0 min-w-0">
                       <span className="font-bold text-[#123458]">{a.profiles?.name || "User"}</span>
                       <span className="text-xs text-[#123458]/60">{new Date(a.created_at).toLocaleString()}</span>
                       <span className="ml-2 break-all overflow-wrap-anywhere flex-1 min-w-0 w-full">{a.message}</span>

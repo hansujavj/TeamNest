@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import type { Task, User } from "@/types";
+import type { Task } from "@/types";
 import { ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
 
 export default function TasksPage() {
@@ -20,13 +20,13 @@ export default function TasksPage() {
       // Fetch tasks assigned to me
       const { data: assignments } = await supabase
         .from("task_assignments")
-        .select("*, tasks(id, title, team_id, status, created_by)")
+        .select("*, tasks(id, title, team_id, status, created_by, description)")
         .eq("user_id", user.id);
       setAssignedTasks((assignments || []).map((a: { tasks: Task }) => a.tasks).filter(Boolean));
       // Fetch tasks created by me
       const { data: created } = await supabase
         .from("tasks")
-        .select("id, title, team_id, status, created_by")
+        .select("id, title, team_id, status, created_by, description")
         .eq("created_by", user.id);
       setCreatedTasks(created || []);
     };
@@ -55,6 +55,7 @@ export default function TasksPage() {
                   aria-label={`Go to team for task ${task.title}`}
                 >
                   <span className="font-bold text-lg text-[#123458]">{task.title}</span>
+                  <span className="text-sm text-[#123458]/80">{task.description ? task.description : 'No description'}</span>
                   <span className="text-xs text-[#123458]/70">Status: {task.status}</span>
                 </li>
               ))}
@@ -80,6 +81,7 @@ export default function TasksPage() {
                   aria-label={`Go to team for task ${task.title}`}
                 >
                   <span className="font-bold text-lg text-[#123458]">{task.title}</span>
+                  <span className="text-sm text-[#123458]/80">{task.description ? task.description : 'No description'}</span>
                   <span className="text-xs text-[#123458]/70">Status: {task.status}</span>
                 </li>
               ))}
