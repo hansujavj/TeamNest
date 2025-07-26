@@ -55,46 +55,7 @@ export default function TeamsPage() {
     getUserAndTeams();
   }, [router]);
 
-  const handleLeaveTeam = async (teamId: string) => {
-    setLeavingTeamId(teamId);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        alert("You must be logged in to leave a team.");
-        return;
-      }
 
-      // Remove user from team_members table
-      const { error } = await supabase
-        .from("team_members")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("team_id", teamId);
-
-      if (error) {
-        console.error("Error leaving team:", error);
-        alert("Failed to leave team. Please try again.");
-        return;
-      }
-
-      // Remove team from memberTeams list
-      setMemberTeams(prev => prev.filter(team => team.id !== teamId));
-      
-      // Remove from leads map
-      setMemberTeamsLeads(prev => {
-        const newLeads = { ...prev };
-        delete newLeads[teamId];
-        return newLeads;
-      });
-
-      alert("Successfully left the team!");
-    } catch (error) {
-      console.error("Error leaving team:", error);
-      alert("Failed to leave team. Please try again.");
-    } finally {
-      setLeavingTeamId(null);
-    }
-  };
 
   const handleConfirmLeaveTeam = async () => {
     if (!confirmLeaveTeamId) return;

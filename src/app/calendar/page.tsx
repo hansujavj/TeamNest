@@ -325,7 +325,7 @@ export default function CalendarPage() {
         <Dialog open={!!deletingEvent} onClose={() => setDeletingEvent(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-2">
           <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 flex flex-col items-center gap-6 w-full max-w-xs border border-[#D4C9BE]">
             <Dialog.Title className="text-lg font-bold text-[#123458]">Delete this event?</Dialog.Title>
-            <div className="text-[#123458]/80 mb-4 text-center">Are you sure you want to delete "{deletingEvent.title}"?</div>
+            <div className="text-[#123458]/80 mb-4 text-center">Are you sure you want to delete &quot;{deletingEvent.title}&quot;?</div>
             <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
               <button className="px-5 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition w-full sm:w-auto" onClick={handleDeleteEvent}>Yes, Delete</button>
               <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition w-full sm:w-auto" onClick={() => setDeletingEvent(null)}>Cancel</button>
