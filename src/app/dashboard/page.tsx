@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import toast from "react-hot-toast";
 import { UsersIcon } from "@heroicons/react/24/outline";
 import type { User, Profile, Team } from "@/types";
+import { Dialog } from "@headlessui/react";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function DashboardPage() {
   const [memberTeams, setMemberTeams] = useState<Team[]>([]);
   const [preferredDomains, setPreferredDomains] = useState<Record<string, string[]>>({});
   const [memberTeamsLeads, setMemberTeamsLeads] = useState<Record<string, string>>({});
+  const [leavingTeamId, setLeavingTeamId] = useState<string | null>(null);
+  const [confirmLeaveTeamId, setConfirmLeaveTeamId] = useState<string | null>(null);
 
   useEffect(() => {
     const getUserAndTasks = async (): Promise<void> => {
@@ -118,6 +121,41 @@ export default function DashboardPage() {
     if (teamId) router.push(`/join-team/${teamId}`);
   };
 
+  const handleConfirmLeaveTeam = async () => {
+    if (!confirmLeaveTeamId) return;
+    setLeavingTeamId(confirmLeaveTeamId);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in to leave a team.");
+        return;
+      }
+      const { error } = await supabase
+        .from("team_members")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("team_id", confirmLeaveTeamId);
+      if (error) {
+        console.error("Error leaving team:", error);
+        toast.error("Failed to leave team. Please try again.");
+        return;
+      }
+      setMemberTeams(prev => prev.filter(team => team.id !== confirmLeaveTeamId));
+      setMemberTeamsLeads(prev => {
+        const newLeads = { ...prev };
+        delete newLeads[confirmLeaveTeamId];
+        return newLeads;
+      });
+      toast.success("Successfully left the team!");
+    } catch (error) {
+      console.error("Error leaving team:", error);
+      toast.error("Failed to leave team. Please try again.");
+    } finally {
+      setLeavingTeamId(null);
+      setConfirmLeaveTeamId(null);
+    }
+  };
+
   // Determine display name for welcome
   const displayName = profile?.name || (user?.email ? user.email.split('@')[0] : '');
 
@@ -213,18 +251,39 @@ export default function DashboardPage() {
                       ))}
                     </div>
                   )}
-                  <button
-                    className="mt-2 font-semibold px-4 py-2 rounded-lg text-base transition border border-[#D4C9BE] bg-gradient-to-r from-[#123458] to-[#D4C9BE] text-white hover:border-[#123458] hover:bg-[#D4C9BE]/90 hover:text-[#123458] hover:scale-105"
-                    onClick={() => router.push(`/team/${team.id}`)}
-                  >
-                    View
-                  </button>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      className="flex-1 font-semibold px-4 py-2 rounded-lg text-base transition border border-[#D4C9BE] bg-gradient-to-r from-[#123458] to-[#D4C9BE] text-white hover:border-[#123458] hover:bg-[#D4C9BE]/90 hover:text-[#123458] hover:scale-105"
+                      onClick={() => router.push(`/team/${team.id}`)}
+                    >
+                      View
+                    </button>
+                    <button
+                      className="flex-1 font-semibold px-4 py-2 rounded-lg text-base transition border border-gray-300 bg-gradient-to-r from-gray-500 to-gray-400 text-white hover:border-gray-400 hover:bg-gray-400/90 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => setConfirmLeaveTeamId(team.id)}
+                      disabled={leavingTeamId === team.id}
+                    >
+                      {leavingTeamId === team.id ? "Leaving..." : "Leave"}
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
       </div>
+      {confirmLeaveTeamId && (
+        <Dialog open={!!confirmLeaveTeamId} onClose={() => setConfirmLeaveTeamId(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-2">
+          <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 flex flex-col items-center gap-6 w-full max-w-xs border border-[#D4C9BE]">
+            <Dialog.Title className="text-lg font-bold text-[#123458]">Leave this team?</Dialog.Title>
+            <div className="text-[#123458]/80 mb-4 text-center">Are you sure you want to leave this team? You will lose access to all its data.</div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
+              <button className="px-5 py-2 rounded-lg bg-gray-500 text-white font-semibold hover:bg-gray-700 transition w-full sm:w-auto" onClick={handleConfirmLeaveTeam}>Yes, Leave</button>
+              <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition w-full sm:w-auto" onClick={() => setConfirmLeaveTeamId(null)}>Cancel</button>
+            </div>
+          </Dialog.Panel>
+        </Dialog>
+      )}
     </div>
   );
 } 

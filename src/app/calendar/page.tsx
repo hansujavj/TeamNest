@@ -6,24 +6,37 @@ import "react-calendar/dist/Calendar.css";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import { Dialog } from "@headlessui/react";
 
 const Calendar = dynamic(() => import("react-calendar"), { ssr: false });
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
+interface CalendarEvent {
+  id?: string;
+  date: string;
+  title: string;
+  team_id: string;
+}
+
 export default function CalendarPage() {
   const [date, setDate] = useState<Value>(new Date());
-  const [events, setEvents] = useState<{ date: string; title: string; team_id: string }[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [eventTitle, setEventTitle] = useState("");
-  const [editingEvent, setEditingEvent] = useState<{ index: number; title: string } | null>(null);
-  const [deletingEvent, setDeletingEvent] = useState<number | null>(null);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState<CalendarEvent | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
+  const [mounted, setMounted] = useState(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     // Fetch user, teams, and events
@@ -56,9 +69,14 @@ export default function CalendarPage() {
         const teamIds = uniqueTeams.map(t => t.id);
         const { data: dbEvents } = await supabase
           .from("calendar_events")
-          .select("event_date, title, team_id")
+          .select("id, event_date, title, team_id")
           .in("team_id", teamIds);
-        setEvents((dbEvents || []).map(e => ({ date: new Date(e.event_date).toDateString(), title: e.title, team_id: e.team_id })));
+        setEvents((dbEvents || []).map(e => ({ 
+          id: e.id,
+          date: new Date(e.event_date).toDateString(), 
+          title: e.title, 
+          team_id: e.team_id 
+        })));
       }
     };
     fetchUserTeamsAndEvents();
@@ -78,25 +96,87 @@ export default function CalendarPage() {
   async function handleAddEvent(e: React.FormEvent) {
     e.preventDefault();
     if (!eventTitle.trim() || !user || !selectedTeamId) return;
-    const eventObj = { date: selectedDateStr, title: eventTitle.trim(), team_id: selectedTeamId };
-    setEvents((prev) => [...prev, eventObj]);
-    setEventTitle("");
-    setShowForm(false);
+    
+    const eventDate = Array.isArray(date) ? (date[0] ? date[0].toISOString().slice(0, 10) : null) : (date as Date).toISOString().slice(0, 10);
+    
     // Save to Supabase
-    await supabase.from("calendar_events").insert([
+    const { data, error } = await supabase.from("calendar_events").insert([
       {
         user_id: user.id,
         team_id: selectedTeamId,
-        event_date: Array.isArray(date) ? (date[0] ? date[0].toISOString().slice(0, 10) : null) : (date as Date).toISOString().slice(0, 10),
+        event_date: eventDate,
         title: eventTitle.trim(),
       },
-    ]);
+    ]).select();
+
+    if (error) {
+      alert("Failed to add event. Please try again.");
+      return;
+    }
+
+    const newEvent = data[0];
+    const eventObj = { 
+      id: newEvent.id,
+      date: selectedDateStr, 
+      title: eventTitle.trim(), 
+      team_id: selectedTeamId 
+    };
+    setEvents((prev) => [...prev, eventObj]);
+    setEventTitle("");
+    setShowForm(false);
   }
+
+  const handleEditEvent = async () => {
+    if (!editingEvent) return;
+    
+    const { error } = await supabase
+      .from("calendar_events")
+      .update({ title: editingEvent.title })
+      .eq("id", editingEvent.id);
+
+    if (error) {
+      alert("Failed to update event. Please try again.");
+      return;
+    }
+
+    setEvents(prev => prev.map(ev => 
+      ev.id === editingEvent.id ? { ...ev, title: editingEvent.title } : ev
+    ));
+    setEditingEvent(null);
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!deletingEvent) return;
+    
+    const { error } = await supabase
+      .from("calendar_events")
+      .delete()
+      .eq("id", deletingEvent.id);
+
+    if (error) {
+      alert("Failed to delete event. Please try again.");
+      return;
+    }
+
+    setEvents(prev => prev.filter(ev => ev.id !== deletingEvent.id));
+    setDeletingEvent(null);
+  };
 
   // Add a helper to get team name by id
   function getTeamName(teamId: string) {
     const team = teams.find(t => t.id === teamId);
     return team ? team.name : "Unknown Team";
+  }
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F1F5F9] to-[#E0E7EF] flex flex-col items-center justify-center py-12 px-4">
+        <div className="bg-white/90 rounded-2xl shadow-lg p-8 max-w-md w-full flex flex-col items-center">
+          <h1 className="text-3xl font-bold text-[#123458] mb-6">Calendar</h1>
+          <div className="text-[#123458]">Loading...</div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -117,17 +197,33 @@ export default function CalendarPage() {
                   eventDate.getFullYear() === date.getFullYear()
                 );
               });
-              if (date.toDateString() === new Date().toDateString()) {
+              
+              // Check if this is today's date
+              const isToday = date.toDateString() === new Date().toDateString();
+              
+              // Check if this is the selected date
+              const selectedDate = Array.isArray(date) ? date : date;
+              const isSelected = selectedDate.toDateString() === date.toDateString();
+              
+              if (isToday) {
                 return hasEvent
-                  ? "calendar-has-event-today text-black font-bold"
-                  : "bg-[#D4C9BE] text-[#123458] font-bold";
+                  ? "calendar-has-event-today bg-gray-500 text-white font-bold"
+                  : "bg-gray-500 text-white font-bold";
               }
+              
+              if (isSelected && !isToday) {
+                return hasEvent
+                  ? "calendar-has-event bg-[#123458] text-white font-bold"
+                  : "bg-[#123458] text-white font-bold";
+              }
+              
               if (hasEvent) {
                 return "calendar-has-event text-black font-bold";
               }
             }
             return undefined;
           }}
+
         />
         <div className="mt-6 text-black text-lg flex items-center gap-4">
           Selected: <span className="font-semibold">{formatDateDDMMYYYY(date as Date)}</span>
@@ -186,9 +282,9 @@ export default function CalendarPage() {
             <div className="text-black opacity-80">No events for this date.</div>
           ) : (
             <ul className="space-y-2">
-              {eventsForDate.map((e, i) => (
-                <li key={i} className="bg-[#D4C9BE]/70 rounded px-3 py-2 text-black font-medium shadow-sm flex items-center gap-2 flex-wrap w-full">
-                  {editingEvent && editingEvent.index === i ? (
+              {eventsForDate.map((event) => (
+                <li key={event.id} className="bg-[#D4C9BE]/70 rounded px-3 py-2 text-black font-medium shadow-sm flex items-center gap-2 flex-wrap w-full">
+                  {editingEvent && editingEvent.id === event.id ? (
                     <>
                       <input
                         type="text"
@@ -201,10 +297,7 @@ export default function CalendarPage() {
                       <div className="flex flex-col sm:flex-row gap-2 w-full">
                         <button
                           className="px-2 py-1 rounded bg-[#123458] text-white hover:bg-[#D4C9BE] hover:text-[#123458] transition text-xs font-semibold w-full sm:w-auto"
-                          onClick={() => {
-                            setEvents(prev => prev.map((ev, idx) => idx === i ? { ...ev, title: editingEvent.title } : ev));
-                            setEditingEvent(null);
-                          }}
+                          onClick={handleEditEvent}
                         >Save</button>
                         <button
                           className="px-2 py-1 rounded bg-gray-200 text-[#123458] hover:bg-gray-300 transition text-xs font-semibold w-full sm:w-auto"
@@ -214,23 +307,11 @@ export default function CalendarPage() {
                     </>
                   ) : (
                     <>
-                      <span className="flex-1">{e.title}</span>
-                      <span className="ml-2 text-xs text-[#123458]/80 font-semibold">[{getTeamName(e.team_id)}]</span>
-                      <button onClick={() => setEditingEvent({ index: i, title: e.title })}><PencilIcon className="w-4 h-4 text-gray-400 hover:text-blue-500 transition" /></button>
-                      <button onClick={() => setDeletingEvent(i)}><TrashIcon className="w-4 h-4 text-gray-400 hover:text-red-500 transition" /></button>
+                      <span className="flex-1">{event.title}</span>
+                      <span className="ml-2 text-xs text-[#123458]/80 font-semibold">[{getTeamName(event.team_id)}]</span>
+                      <button onClick={() => setEditingEvent(event)}><PencilIcon className="w-4 h-4 text-gray-400 hover:text-blue-500 transition" /></button>
+                      <button onClick={() => setDeletingEvent(event)}><TrashIcon className="w-4 h-4 text-gray-400 hover:text-red-500 transition" /></button>
                     </>
-                  )}
-                  {deletingEvent === i && (
-                    <div className="absolute left-0 top-0 w-full h-full flex items-center justify-center bg-black/30 z-10">
-                      <div className="bg-white rounded shadow p-4 flex gap-2">
-                        <span>Delete this event?</span>
-                        <button className="px-3 py-1 rounded bg-[#123458] text-white font-semibold hover:bg-[#D4C9BE] hover:text-[#123458] transition" onClick={() => {
-                          setEvents(prev => prev.filter((_, idx) => idx !== i));
-                          setDeletingEvent(null);
-                        }}>Yes</button>
-                        <button className="px-3 py-1 rounded bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition" onClick={() => setDeletingEvent(null)}>No</button>
-                      </div>
-                    </div>
                   )}
                 </li>
               ))}
@@ -238,6 +319,21 @@ export default function CalendarPage() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deletingEvent && (
+        <Dialog open={!!deletingEvent} onClose={() => setDeletingEvent(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-2">
+          <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 flex flex-col items-center gap-6 w-full max-w-xs border border-[#D4C9BE]">
+            <Dialog.Title className="text-lg font-bold text-[#123458]">Delete this event?</Dialog.Title>
+            <div className="text-[#123458]/80 mb-4 text-center">Are you sure you want to delete "{deletingEvent.title}"?</div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
+              <button className="px-5 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition w-full sm:w-auto" onClick={handleDeleteEvent}>Yes, Delete</button>
+              <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition w-full sm:w-auto" onClick={() => setDeletingEvent(null)}>Cancel</button>
+            </div>
+          </Dialog.Panel>
+        </Dialog>
+      )}
+
       <style jsx global>{`
         /* Make all calendar date numbers black */
         .react-calendar__tile,
@@ -253,6 +349,35 @@ export default function CalendarPage() {
         }
         ul.space-y-2 > li {
           color: #000 !important;
+        }
+        /* Hide neighboring month dates */
+        .react-calendar__tile--neighboringMonth,
+        .react-calendar__month-view__days__day--neighboringMonth {
+          visibility: hidden !important;
+          display: none !important;
+        }
+        /* Override any yellow highlighting for today */
+        .react-calendar__tile--now,
+        .react-calendar__month-view__days__day--now,
+        .react-calendar__tile[aria-label*="today"],
+        .react-calendar__month-view__days__day[aria-label*="today"],
+        .react-calendar__tile--active,
+        .react-calendar__month-view__days__day--active {
+          background-color: #6b7280 !important;
+          color: white !important;
+          border: 2px solid #4b5563 !important;
+        }
+        .react-calendar__tile--now:hover,
+        .react-calendar__month-view__days__day--now:hover,
+        .react-calendar__tile--active:hover,
+        .react-calendar__month-view__days__day--active:hover {
+          background-color: #4b5563 !important;
+        }
+        /* Additional override for any yellow backgrounds */
+        .react-calendar__tile[style*="yellow"],
+        .react-calendar__month-view__days__day[style*="yellow"] {
+          background-color: #6b7280 !important;
+          color: white !important;
         }
         /* Dot below days with events */
         .calendar-has-event {
@@ -279,7 +404,7 @@ export default function CalendarPage() {
           width: 7px;
           height: 7px;
           border-radius: 50%;
-          background: #123458;
+          background: white;
           margin-top: 2px;
         }
       `}</style>

@@ -39,6 +39,7 @@ export default function TeamPage() {
   const [deletingDomain, setDeletingDomain] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showDeleteTeam, setShowDeleteTeam] = useState(false);
+  const [showLeaveTeam, setShowLeaveTeam] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -242,6 +243,14 @@ export default function TeamPage() {
     router.push("/dashboard");
   };
 
+  // Add handler for leaving the team
+  const handleLeaveTeam = async () => {
+    if (!user || !teamId) return;
+    await supabase.from("team_members").delete().eq("user_id", user.id).eq("team_id", teamId);
+    toast.success("You have left the team.");
+    router.push("/team");
+  };
+
   if (!team) return <div className="p-8 text-red-500">Team not found.</div>;
 
   const joinLink = `${typeof window !== "undefined" ? window.location.origin : ""}/join-team/${teamId}`;
@@ -282,6 +291,14 @@ export default function TeamPage() {
                 onClick={() => setShowDeleteTeam(true)}
               >
                 Delete Team
+              </button>
+            )}
+            {!isLead && (
+              <button
+                className="mt-2 bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded-xl font-semibold shadow transition"
+                onClick={() => setShowLeaveTeam(true)}
+              >
+                Leave Team
               </button>
             )}
           </div>
@@ -572,6 +589,18 @@ export default function TeamPage() {
             <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
               <button className="px-5 py-2 rounded-lg bg-gray-500 text-white font-semibold hover:bg-gray-700 transition w-full sm:w-auto" onClick={handleDeleteTeam}>Yes, Delete</button>
               <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition w-full sm:w-auto" onClick={() => setShowDeleteTeam(false)}>Cancel</button>
+            </div>
+          </Dialog.Panel>
+        </Dialog>
+      )}
+      {showLeaveTeam && (
+        <Dialog open={showLeaveTeam} onClose={() => setShowLeaveTeam(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-2">
+          <Dialog.Panel className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 flex flex-col items-center gap-6 w-full max-w-xs border border-[#D4C9BE]">
+            <Dialog.Title className="text-lg font-bold text-[#123458]">Leave this team?</Dialog.Title>
+            <div className="text-[#123458]/80 mb-4 text-center">Are you sure you want to leave this team? You will lose access to all its data.</div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
+              <button className="px-5 py-2 rounded-lg bg-gray-500 text-white font-semibold hover:bg-gray-700 transition w-full sm:w-auto" onClick={handleLeaveTeam}>Yes, Leave</button>
+              <button className="px-5 py-2 rounded-lg bg-gray-200 text-[#123458] font-semibold hover:bg-gray-300 transition w-full sm:w-auto" onClick={() => setShowLeaveTeam(false)}>Cancel</button>
             </div>
           </Dialog.Panel>
         </Dialog>
